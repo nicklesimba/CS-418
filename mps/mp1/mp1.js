@@ -86,10 +86,12 @@ function setupShaders() {
     fragmentShader = loadShaderFromDOM("shader-fs");
     
     shaderProgram = gl.createProgram();
+   
     gl.attachShader(shaderProgram, vertexShader);
     gl.attachShader(shaderProgram, fragmentShader);
     gl.linkProgram(shaderProgram);
-  
+    shaderProgram.pMatrixUniform = gl.getUniformLocation(shaderProgram, "uPMatrix");
+
     if (!gl.getProgramParameter(shaderProgram, gl.LINK_STATUS)) {
       alert("Failed to setup shaders");
     }
@@ -103,58 +105,71 @@ function setupShaders() {
 /**
  * Populate buffers with data - im going to mess with this to try and draw a second triangle!
  */
-function setupBuffers() {
+function setupBuffers(triVertices, itemSize, numItems) {
     vertexPositionBuffer = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, vertexPositionBuffer);
-    var triangleVertices = [
-          -0.4,  0.7,  0.0,
-           0.4,  0.7,  0.0,
-           0.4,  0.3,  0.0,
-          -0.4,  0.7,  0.0,
-          -0.4,  0.3,  0.0,
-           0.4,  0.3,  0.0,
-          -0.4, -0.7,  0.0,
-           0.4, -0.7,  0.0,
-           0.4, -0.3,  0.0,
-          -0.4, -0.3,  0.0,
-          -0.4, -0.7,  0.0,
-           0.4, -0.3,  0.0,
-          -0.2,  0.3,  0.0,
-          -0.2, -0.3,  0.0,
-           0.2, -0.3,  0.0,
-           0.2,  0.3,  0.0,
-           0.2, -0.3,  0.0,
-          -0.2,  0.3,  0.0,
-    ];
+    var triangleVertices = triVertices; /*[
+          -20,  35,  0.0, // orange I
+           20,  35,  0.0,
+           20,  15,  0.0,
+          -20,  35,  0.0,
+          -20,  15,  0.0,
+           20,  15,  0.0,
+          -20, -35,  0.0,
+           20, -35,  0.0,
+           20, -15,  0.0,
+          -20, -15,  0.0,
+          -20, -35,  0.0,
+           20, -15,  0.0,
+          -10,  15,  0.0,
+          -10, -15,  0.0,
+           10, -15,  0.0,
+           10,  15,  0.0,
+           10, -15,  0.0,
+          -10,  15,  0.0,
+          
+          // -16,  15,  0.0, // blue border
+          // -20,  15,  0.0,
+          // -20,  35,  0.0,
+          // -16,  15,  0.0,
+          // -20,  35,  0.0,
+          // -16,  35,  0.0,
+          // -16,  35,  0.0,
+          // -16,  31,  0.0,
+          //  16,  35,  0.0,
+          // -16,  31,  0.0,
+          //  16,  35,  0.0, 
+          //  15,  31,  0.0,
+          //  16,  35,  0.0,
+          //  20,  35,  0.0,
+          //  20,  15,  0.0,
+          //  20,  15,  0.0,
+          //  16,  35,  0.0,
+          //  16,  15,  0.0,
+    ];*/
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(triangleVertices), gl.STATIC_DRAW); // static draw probably isn't great for animated shits!
     vertexPositionBuffer.itemSize = 3;
     vertexPositionBuffer.numberOfItems = 18;
       
-    vertexColorBuffer = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, vertexColorBuffer);
-    var colors = [
-        0.909, 0.290, 0.152, 1.0,
-        0.909, 0.290, 0.152, 1.0,
-        0.909, 0.290, 0.152, 1.0,
-        0.909, 0.290, 0.152, 1.0,
-        0.909, 0.290, 0.152, 1.0,
-        0.909, 0.290, 0.152, 1.0,
-        0.909, 0.290, 0.152, 1.0,
-        0.909, 0.290, 0.152, 1.0,
-        0.909, 0.290, 0.152, 1.0,
-        0.909, 0.290, 0.152, 1.0,
-        0.909, 0.290, 0.152, 1.0,
-        0.909, 0.290, 0.152, 1.0,
-        0.909, 0.290, 0.152, 1.0,
-        0.909, 0.290, 0.152, 1.0,
-        0.909, 0.290, 0.152, 1.0,
-        0.909, 0.290, 0.152, 1.0,
-        0.909, 0.290, 0.152, 1.0,
-        0.909, 0.290, 0.152, 1.0,
-      ];
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(colors), gl.STATIC_DRAW); // static draw probably isn't great for animated shits!
-    vertexColorBuffer.itemSize = 4;
-    vertexColorBuffer.numItems = 6;  
+    // vertexColorBuffer = gl.createBuffer();
+    // gl.bindBuffer(gl.ARRAY_BUFFER, vertexColorBuffer);
+    // var colors = [
+    //     0.909, 0.290, 0.152, 1.0, // orange
+    //     0.909, 0.290, 0.152, 1.0,
+    //     0.909, 0.290, 0.152, 1.0,
+    //     0.909, 0.290, 0.152, 1.0,
+    //     0.909, 0.290, 0.152, 1.0,
+    //     0.909, 0.290, 0.152, 1.0,
+    //     // 0.074, 0.160, 0.294, 1.0, // blue
+    //     // 0.074, 0.160, 0.294, 1.0,
+    //     // 0.074, 0.160, 0.294, 1.0,
+    //     // 0.074, 0.160, 0.294, 1.0,
+    //     // 0.074, 0.160, 0.294, 1.0,
+    //     // 0.074, 0.160, 0.294, 1.0,
+    //   ];
+    // gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(colors), gl.STATIC_DRAW); // static draw probably isn't great for animated shits!
+    // vertexColorBuffer.itemSize = 4;
+    // vertexColorBuffer.numItems = 6;  
 }
 
 /**
@@ -163,16 +178,16 @@ function setupBuffers() {
 function draw() { 
     gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight);
 
-    gl.clear(gl.COLOR_BUFFER_BIT);
+    //gl.clear(gl.COLOR_BUFFER_BIT);
   
     gl.bindBuffer(gl.ARRAY_BUFFER, vertexPositionBuffer);
     gl.vertexAttribPointer(shaderProgram.vertexPositionAttribute, 
                            vertexPositionBuffer.itemSize, gl.FLOAT, false, 0, 0);
     gl.enableVertexAttribArray(shaderProgram.vertexPositionAttribute);
   
-    gl.bindBuffer(gl.ARRAY_BUFFER, vertexColorBuffer);
+    // gl.bindBuffer(gl.ARRAY_BUFFER, vertexColorBuffer);
     gl.vertexAttribPointer(shaderProgram.vertexColorAttribute, 
-                              vertexColorBuffer.itemSize, gl.FLOAT, false, 0, 0);
+                              4, gl.FLOAT, false, 0, 0);
     gl.enableVertexAttribArray(shaderProgram.vertexColorAttribute)
                             
     gl.drawArrays(gl.TRIANGLES, 0, vertexPositionBuffer.numberOfItems);
@@ -185,9 +200,94 @@ function startup() {
     console.log("No bugs so far...");
     canvas = document.getElementById("myGLCanvas");
     gl = createGLContext(canvas);
-    setupShaders(); 
-    setupBuffers();
     gl.clearColor(0.0, 0.0, 0.0, 1.0);
+    setupShaders(); 
+
+    var pMatrix = mat4.create();
+    mat4.ortho(pMatrix, -100, 100, -100, 100, -100, 100);
+    gl.uniformMatrix4fv(shaderProgram.pMatrixUniform, false, pMatrix);
+    
+    vColor = gl.getUniformLocation(shaderProgram, "vColor");
+
+    //change color to orange and setup buffer for orange I
+    // 0.909, 0.290, 0.152, 1.0
+    gl.uniform4fv( vColor, new Float32Array([0.909, 0.290, 0.152, 1.0]) );
+    
+    triVertices = [
+      -20,  35,  0.0, // orange I
+       20,  35,  0.0,
+       20,  15,  0.0,
+      -20,  35,  0.0,
+      -20,  15,  0.0,
+       20,  15,  0.0,
+      -20, -35,  0.0,
+       20, -35,  0.0,
+       20, -15,  0.0,
+      -20, -15,  0.0,
+      -20, -35,  0.0,
+       20, -15,  0.0,
+      -10,  15,  0.0,
+      -10, -15,  0.0,
+       10, -15,  0.0,
+       10,  15,  0.0,
+       10, -15,  0.0,
+      -10,  15,  0.0,
+    ];
+    setupBuffers(triVertices, 3, 18); //provide arguments with colors and coordinates, as well as num of items and shits
     draw();  
+
+    //change color to blue and setup buffer for blue border!
+    // 0.074, 0.160, 0.294, 1.0
+    gl.uniform4fv( vColor, new Float32Array([0.074, 0.160, 0.294, 1.0]) );
+    triVertices = [
+      -16,  15,  0.0, // blue border
+      -20,  15,  0.0,
+      -20,  35,  0.0,
+      -16,  15,  0.0,
+      -20,  35,  0.0,
+      -16,  35,  0.0,
+      -16,  35,  0.0,
+      -16,  31,  0.0,
+       16,  35,  0.0,
+      -16,  31,  0.0,
+       16,  35,  0.0, 
+       16,  31,  0.0,
+       16,  35,  0.0,
+       20,  35,  0.0,
+       20,  15,  0.0,
+       20,  15,  0.0,
+       16,  35,  0.0,
+       16,  15,  0.0,
+    ];
+    setupBuffers(triVertices, 3, 18);
+    draw();
+
+    startVertex = [0, 0, 0];
+    var radius = 4;
+    var z = 0;
+    numVertices = 10;
+
+    fanVertices = [-10, 15, 0];
+    for (i = 0; i <= numVertices; i++) {
+      angle = i * (Math.PI/4) / numVertices;
+      x = (radius * Math.cos(angle));
+      y = (radius * Math.sin(angle));
+      fanVertices.push(x-10);
+      fanVertices.push(y+15);
+      fanVertices.push(z);
+      console.log(fanVertices);
+    }
+    fanVertices
+
+    setupBuffers(triVertices, 3, 10);
+    draw();
 }
   
+
+/**
+ * List of questions
+ * -----------------
+ * 1. How can I still keep the black background when I do multiple draw calls? see the commented line in the draw function
+ * 2. I can't get my fan to show up!
+ * 3. Review animation pipeline
+ */
