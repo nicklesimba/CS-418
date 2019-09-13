@@ -279,7 +279,7 @@ function animate() {
  * Tick called for every animation frame.
  */
 function tick() {
-    requestAnimFrame(tick);
     draw();
     animate();
+    requestAnimFrame(tick);
 }
