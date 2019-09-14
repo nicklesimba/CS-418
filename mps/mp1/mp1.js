@@ -21,6 +21,9 @@ var vertexColorBuffer;
 /** @global The angle of rotation around the x axis */
 var defAngle = 0;
 
+/** @global The amount of translation in the x direction*/
+var transRights = [0, 0, 0];
+
 /** @global Number of vertices around the circle boundary */
 var numCircleVerts = 100;
 
@@ -192,11 +195,24 @@ function startup() {
  * Animation to be called from tick. Updates globals and performs animation for each tick.
  */
 function animate() { 
-  defAngle= (defAngle+1.0) % 360;
+  defAngle = (defAngle+1.0) % 360;
+  transRights = [30, 0, 0];
+  // if (transRights == 499) {
+  //   transRights = -499;
+  // }
 
-  mat4.fromZRotation(mvMatrix, degToRad(defAngle)); 
-  mat4.ortho(pMatrix, -100, 100, -100, 100, -100, 100);
+  var tmpMatrix = mat4.create();
+  var tmp2Matrix = mat4.create();
+  mat4.fromZRotation(tmpMatrix, degToRad(defAngle));
+  mat4.translate(tmp2Matrix, tmp2Matrix, transRights);
+
+  mat4.multiply(mvMatrix, tmp2Matrix, tmpMatrix);
+
+  // mat4.fromZRotation(mvMatrix, degToRad(defAngle));
+  // mat4.translate(mvMatrix, mvMatrix, transRights);
   gl.uniformMatrix4fv(shaderProgram.uMVMatrixUniform, false, mvMatrix);
+
+  mat4.ortho(pMatrix, -100, 100, -100, 100, -100, 100);
   gl.uniformMatrix4fv(shaderProgram.pMatrixUniform, false, pMatrix);
   
   vColor = gl.getUniformLocation(shaderProgram, "vColor");
@@ -226,13 +242,13 @@ function animate() {
     -10,  15,  0.0,
   ];
 
-  for (var i = 0; i < triVertices.length; i++) {
-    if (i % 3 == 0) {
-      defPt = deformSin(triVertices[i], triVertices[i+1], defAngle);
-      triVertices[i] += defPt[0];
-      triVertices[i+1] += defPt[1];
-    }
-  }
+  // for (var i = 0; i < triVertices.length; i++) {
+  //   if (i % 3 == 0) {
+  //     defPt = deformCos(triVertices[i], triVertices[i+1], defAngle);
+  //     triVertices[i] += defPt[0];
+  //     triVertices[i+1] += defPt[1];
+  //   }
+  // }
   setupBuffers(triVertices, 3, 18); //provide arguments with colors and coordinates, as well as num of items and shits
   draw(0);  
 
@@ -314,13 +330,13 @@ function animate() {
       6,  15,  0.0,
   ];
 
-  for (var i = 0; i < triVertices.length; i++) {
-    if (i % 3 == 0) {
-      defPt = deformSin(triVertices[i], triVertices[i+1], defAngle);
-      triVertices[i] += defPt[0];
-      triVertices[i+1] += defPt[1];
-    }
-  }
+  // for (var i = 0; i < triVertices.length; i++) {
+  //   if (i % 3 == 0) {
+  //     defPt = deformCos(triVertices[i], triVertices[i+1], defAngle);
+  //     triVertices[i] += defPt[0];
+  //     triVertices[i+1] += defPt[1];
+  //   }
+  // }
 
   setupBuffers(triVertices, 3, 72);
   draw(0);
@@ -334,11 +350,11 @@ function animate() {
     angle = i * (Math.PI/2) / numCircleVerts;
     x = (radius * Math.cos(angle));
     y = (radius * Math.sin(angle));
-    defPt = deformSin(x, y, angle);
-    fanVertices.push(x-10+defPt[0]);
-    fanVertices.push(y+15+defPt[1]);
-    // fanVertices.push(x-10);
-    // fanVertices.push(y+15);
+    // defPt = deformCos(x, y, angle);
+    // fanVertices.push(x-10+defPt[0]);
+    // fanVertices.push(y+15+defPt[1]);
+    fanVertices.push(x-10);
+    fanVertices.push(y+15);
     fanVertices.push(z);
   }
 
@@ -350,11 +366,11 @@ function animate() {
     angle = (Math.PI/2) + i * (Math.PI/2) / numCircleVerts;
     x = (radius * Math.cos(angle));
     y = (radius * Math.sin(angle));
-    defPt = deformSin(x, y, angle);
-    fanVertices.push(x+10+defPt[0]);
-    fanVertices.push(y+15+defPt[1]);
-    // fanVertices.push(x+10);
-    // fanVertices.push(y+15);
+    // defPt = deformCos(x, y, angle);
+    // fanVertices.push(x+10+defPt[0]);
+    // fanVertices.push(y+15+defPt[1]);
+    fanVertices.push(x+10);
+    fanVertices.push(y+15);
     fanVertices.push(z);
   }
 
@@ -366,11 +382,11 @@ function animate() {
     angle = (3*Math.PI/2) + i * (Math.PI/2) / numCircleVerts;
     x = (radius * Math.cos(angle));
     y = (radius * Math.sin(angle));
-    defPt = deformSin(x, y, angle);
-    fanVertices.push(x-10+defPt[0]);
-    fanVertices.push(y-15+defPt[1]);
-    // fanVertices.push(x-10);
-    // fanVertices.push(y-15);
+    // defPt = deformCos(x, y, angle);
+    // fanVertices.push(x-10+defPt[0]);
+    // fanVertices.push(y-15+defPt[1]);
+    fanVertices.push(x-10);
+    fanVertices.push(y-15);
     fanVertices.push(z);
   }
 
@@ -382,11 +398,11 @@ function animate() {
     angle = (Math.PI) + i * (Math.PI/2) / numCircleVerts;
     x = (radius * Math.cos(angle));
     y = (radius * Math.sin(angle));
-    defPt = deformSin(x, y, angle);
-    fanVertices.push(x+10+defPt[0]);
-    fanVertices.push(y-15+defPt[1]);
-    // fanVertices.push(x+10);
-    // fanVertices.push(y-15);
+    // defPt = deformCos(x, y, angle);
+    // fanVertices.push(x+10+defPt[0]);
+    // fanVertices.push(y-15+defPt[1]);
+    fanVertices.push(x+10);
+    fanVertices.push(y-15);
     fanVertices.push(z);
   }
 
@@ -415,7 +431,7 @@ function animate() {
 //       angle = i *  2*Math.PI / numCircleVerts;
 //       x=(radius * Math.cos(angle));
 //       y=(radius * Math.sin(angle));
-//       var defPt = deformSin(x, y, angle);
+//       var defPt = deformCos(x, y, angle);
 //       triangleVertices.push(x+defPt[0]);
 //       triangleVertices.push(y+defPt[1]);
 //       triangleVertices.push(z);
@@ -430,9 +446,9 @@ function animate() {
  * Documentation for this function is available on the slides, dummy
  * Deforms coordinates lol
  */
-function deformSin(x, y, angle) {
+function deformCos(x, y, angle) {
   var circPt = vec2.fromValues(x, y);
-  var dist = 0.2*Math.sin((angle)+degToRad(defAngle));
+  var dist = 0.2*Math.cos((angle)+degToRad(defAngle));
   vec2.normalize(circPt, circPt);
   vec2.scale(circPt, circPt, dist);
   return circPt;
