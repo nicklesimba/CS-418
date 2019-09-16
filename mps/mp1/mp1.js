@@ -21,8 +21,14 @@ var vertexColorBuffer;
 /** @global The angle of rotation around the x axis */
 var defAngle = 0;
 
-/** @global The amount of translation in the x direction*/
-var transRights = [0, 0, 0];
+// /** @global The amount of translation in the x direction*/
+// var transRights = [0, 0, 0];
+
+/** @global The amount the model should be scaled by */
+var scalefac = 1;
+
+/** @global The sign of scaling by */
+var sign = 1;
 
 /** @global Number of vertices around the circle boundary */
 var numCircleVerts = 100;
@@ -196,20 +202,22 @@ function startup() {
  */
 function animate() { 
   defAngle = (defAngle+1.0) % 360;
-  transRights = [30, 0, 0];
-  // if (transRights == 499) {
-  //   transRights = -499;
-  // }
+
+  scalefac += (sign * 0.01);
+  if (scalefac >= 2) {
+    sign *= -1;
+  }
+  if (scalefac <= 1) {
+    sign *= -1;
+  }
 
   var tmpMatrix = mat4.create();
   var tmp2Matrix = mat4.create();
   mat4.fromZRotation(tmpMatrix, degToRad(defAngle));
-  mat4.translate(tmp2Matrix, tmp2Matrix, transRights);
-
+  mat4.scale(tmp2Matrix, tmp2Matrix, [scalefac, scalefac, scalefac]);
+  
   mat4.multiply(mvMatrix, tmp2Matrix, tmpMatrix);
 
-  // mat4.fromZRotation(mvMatrix, degToRad(defAngle));
-  // mat4.translate(mvMatrix, mvMatrix, transRights);
   gl.uniformMatrix4fv(shaderProgram.uMVMatrixUniform, false, mvMatrix);
 
   mat4.ortho(pMatrix, -100, 100, -100, 100, -100, 100);
