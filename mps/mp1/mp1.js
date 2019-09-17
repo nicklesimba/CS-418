@@ -266,21 +266,21 @@ function animate() {
   triVertices = [
     -16,  15,  0.0, // top arc 18
     -20,  15,  0.0,
-    -20,  35,  0.0,
+    -20,  35,  0.0, // 7
     -16,  15,  0.0,
-    -20,  35,  0.0,
-    -16,  35,  0.0,
-    -16,  35,  0.0,
+    -20,  35,  0.0, // 13
+    -16,  35,  0.0, // 16
+    -16,  35,  0.0, // 19
     -16,  31,  0.0,
-      16,  35,  0.0,
+      16,  35,  0.0, // 25
     -16,  31,  0.0,
-      16,  35,  0.0, 
+      16,  35,  0.0,  // 31
       16,  31,  0.0,
-      16,  35,  0.0,
-      20,  35,  0.0,
+      16,  35,  0.0, // 37
+      20,  35,  0.0, // 40
       20,  15,  0.0,
       20,  15,  0.0,
-      16,  35,  0.0,
+      16,  35,  0.0, // 49
       16,  15,  0.0,
     -16, -15,  0.0, // bottom arc 18
     -20, -15,  0.0,
@@ -335,9 +335,158 @@ function animate() {
     10, -15,  0.0,
     6, -15,  0.0,
     10, -15,  0.0,
-      6,  15,  0.0,
+      6,  15,  0.0, // this marks the 72nd, 0.0 is 215
+     
+    -8,  16,  0.0,    // 1st popout lad
+    -8,  14,  0.0,
+    -10, 15,  0.0,
+    -8, 14,  0.0, // 2nd popout lad
+    -8, 12,  0.0,
+    -10, 13,  0.0,
+    -8,  12,  0.0, // 3rd popout lad
+    -8, 10,  0.0,
+    -10, 11,  0.0,
+    -8, 10,  0.0, // 4th popout lad
+    -8, 8,  0.0,
+    -10, 9,  0.0,
+    -8, 8,  0.0, // 5th popout lad
+    -8, 6,  0.0,
+    -10, 7,  0.0,
+    -8, 6,  0.0, // 6th popout lad
+    -8, 4,  0.0,
+    -10, 5,  0.0,
+    -8, 4,  0.0, // 7th popout lad
+    -8, 2,  0.0,
+    -10, 3,  0.0,
+    -8, 2,  0.0, // 8th popout lad
+    -8, 0,  0.0,
+    -10, 1,  0.0,
+    -8, 0,  0.0, // 9th popout lad
+    -8, -2,  0.0,
+    -10, -1,  0.0,
+    -8, -2,  0.0, // 10th popout lad
+    -8, -4,  0.0,
+    -10, -3,  0.0,
+    -8, -4,  0.0, // 11th popout lad
+    -8, -6,  0.0,
+    -10, -5,  0.0,
+    -8, -6,  0.0, // 12th popout lad
+    -8, -8,  0.0,
+    -10, -7,  0.0,
+    -8, -8,  0.0, // 13th popout lad
+    -8, -10,  0.0,
+    -10, -9,  0.0,
+    -8, -10,  0.0, // 14th popout lad
+    -8, -12,  0.0,
+    -10, -11,  0.0,
+    -8, -12,  0.0, // 15th popout lad
+    -8, -14,  0.0,
+    -10, -13,  0.0,
+    -8, -14,  0.0, // 16th popout lad
+    -8, -16,  0.0,
+    -10, -15,  0.0,
+
+    8,  16,  0.0,    // 1st popout lad
+    8,  14,  0.0,
+    10, 15,  0.0,
+    8, 14,  0.0, // 2nd popout lad
+    8, 12,  0.0,
+    10, 13,  0.0,
+    8,  12,  0.0, // 3rd popout lad
+    8, 10,  0.0,
+    10, 11,  0.0,
+    8, 10,  0.0, // 4th popout lad
+    8, 8,  0.0,
+    10, 9,  0.0,
+    8, 8,  0.0, // 5th popout lad
+    8, 6,  0.0,
+    10, 7,  0.0,
+    8, 6,  0.0, // 6th popout lad
+    8, 4,  0.0,
+    10, 5,  0.0,
+    8, 4,  0.0, // 7th popout lad
+    8, 2,  0.0,
+    10, 3,  0.0,
+    8, 2,  0.0, // 8th popout lad
+    8, 0,  0.0,
+    10, 1,  0.0,
+    8, 0,  0.0, // 9th popout lad
+    8, -2,  0.0,
+    10, -1,  0.0,
+    8, -2,  0.0, // 10th popout lad
+    8, -4,  0.0,
+    10, -3,  0.0,
+    8, -4,  0.0, // 11th popout lad
+    8, -6,  0.0,
+    10, -5,  0.0,
+    8, -6,  0.0, // 12th popout lad
+    8, -8,  0.0,
+    10, -7,  0.0,
+    8, -8,  0.0, // 13th popout lad
+    8, -10,  0.0,
+    10, -9,  0.0,
+    8, -10,  0.0, // 14th popout lad
+    8, -12,  0.0,
+    10, -11,  0.0,
+    8, -12,  0.0, // 15th popout lad
+    8, -14,  0.0,
+    10, -13,  0.0,
+    8, -14,  0.0, // 16th popout lad
+    8, -16,  0.0,
+    10, -15,  0.0,
   ];
 
+  // vertexAnimIndices = [7, 13, 16, 19, 25, 31, 37, 40, 49];
+  // non-uniform transform lol
+  if (defAngle < 45) {
+    triVertices[222] *= 1.5;
+    triVertices[294] *= 1.5;
+    triVertices[402] *= 1.5;
+    triVertices[474] *= 1.5;
+  }
+  else if (defAngle >= 45 && defAngle < 90) {
+    triVertices[231] *= 1.8;
+    triVertices[303] *= 1.8;
+    triVertices[411] *= 1.8;
+    triVertices[483] *= 1.8;
+  }
+  else if (defAngle >= 90 && defAngle < 135) {
+    triVertices[240] *= 2;
+    triVertices[312] *= 2;
+    triVertices[420] *= 2; // blaze it
+    triVertices[492] *= 2;
+  }
+  else if (defAngle >= 135 && defAngle < 180) {
+    triVertices[249] *= 1.8;
+    triVertices[321] *= 1.8;
+    triVertices[429] *= 1.8;
+    triVertices[501] *= 1.8;
+  }
+  else if (defAngle >= 180 && defAngle < 225) {
+    triVertices[258] *= 1.5;
+    triVertices[330] *= 1.5;
+    triVertices[366] *= 1.5;
+    triVertices[438] *= 1.5;
+  }
+  else if (defAngle >= 225 && defAngle < 270) {
+    triVertices[267] *= 1.8;
+    triVertices[339] *= 1.8;
+    triVertices[375] *= 1.8;
+    triVertices[447] *= 1.8;
+  }
+  else if (defAngle >= 270 && defAngle < 315) {
+    triVertices[276] *= 2;
+    triVertices[348] *= 2;
+    triVertices[384] *= 2;
+    triVertices[456] *= 2;
+  }
+  else if (defAngle >= 315 && defAngle < 360) {
+    triVertices[285] *= 1.8;
+    triVertices[357] *= 1.8;
+    triVertices[393] *= 1.8;
+    triVertices[465] *= 1.8;
+  }
+  
   // for (var i = 0; i < triVertices.length; i++) {
   //   if (i % 3 == 0) {
   //     defPt = deformCos(triVertices[i], triVertices[i+1], defAngle);
@@ -346,7 +495,7 @@ function animate() {
   //   }
   // }
 
-  setupBuffers(triVertices, 3, 72);
+  setupBuffers(triVertices, 3, 168);
   draw(0);
 
   var radius = 4;
