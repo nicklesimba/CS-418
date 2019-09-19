@@ -39,12 +39,18 @@ var mvMatrix = mat4.create();
 /** @global The Projection matrix */
 var pMatrix = mat4.create();
 
+/** @global The id telling us which animation to do */
 var anim_value;
+
+/** @global The id telling us which animation was last */
 var anim_value_prev = "Illini";
 
-var mode = 0;
-
+/** @global Used for alpha value adjustment */
 var colfac = 1;
+
+/** @global Used for alpha value adjustment */
+
+/** @global These are used for the Custom animation, and provide colors for each region */
 var colsign = 1;
 var colorlad1 = [0, 0, 0, 1.0];
 var colorlad2 = [0, 0, 0, 1.0];
@@ -169,11 +175,11 @@ function setupBuffers(triVertices, itemSize, numItems) {
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(triangleVertices), gl.STATIC_DRAW); // static draw probably isn't great for animated shits!
     vertexPositionBuffer.itemSize = itemSize;
     vertexPositionBuffer.numberOfItems = numItems;
-      
 }
 
 /**
  * Draw call that applies matrix transformations to model and draws model in frame
+ * @param {int} modeSelect mode selection value of 0 or 1 for deciding if a triangle or triangle fan is being drawn.
  */
 function draw(modeSelect) { 
     gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight);
@@ -205,15 +211,11 @@ function draw(modeSelect) {
     }
 
     if (anim_value != "Illini" && anim_value_prev == "Illini") {
-        console.log("jyot pi");
-        shart();
-        mode = 1;
+        gl.clear(gl.COLOR_BUFFER_BIT);
     }
 
     else if (anim_value != "Custom" && anim_value_prev == "Custom") {
-        console.log("dimitros");
-        shart();
-        mode = 0;
+        gl.clear(gl.COLOR_BUFFER_BIT);
     }
 
     anim_value_prev = anim_value;
@@ -233,7 +235,7 @@ function startup() {
 }
 
 /**
- * Animation to be called from tick. Updates globals and performs animation for each tick.
+ * Animation to be called from tick. Updates globals and performs Illini I animation for each tick.
  */
 function animate() { 
   defAngle = (defAngle+1.0) % 360;
@@ -245,7 +247,7 @@ function animate() {
   if (scalefac <= 1) {
     sign *= -1;
   }
-  console.log(scalefac);
+  
   var tmpMatrix = mat4.create();
   var tmp2Matrix = mat4.create();
   mat4.fromZRotation(tmpMatrix, degToRad(defAngle));
@@ -285,13 +287,6 @@ function animate() {
     -10,  15,  0.0,
   ];
 
-  // for (var i = 0; i < triVertices.length; i++) {
-  //   if (i % 3 == 0) {
-  //     defPt = deformCos(triVertices[i], triVertices[i+1], defAngle);
-  //     triVertices[i] += defPt[0];
-  //     triVertices[i+1] += defPt[1];
-  //   }
-  // }
   setupBuffers(triVertices, 3, 18); //provide arguments with colors and coordinates, as well as num of items and shits
   draw(0);  
 
@@ -521,14 +516,6 @@ function animate() {
     triVertices[393] *= 1.8;
     triVertices[465] *= 1.8;
   }
-  
-  // for (var i = 0; i < triVertices.length; i++) {
-  //   if (i % 3 == 0) {
-  //     defPt = deformCos(triVertices[i], triVertices[i+1], defAngle);
-  //     triVertices[i] += defPt[0];
-  //     triVertices[i+1] += defPt[1];
-  //   }
-  // }
 
   setupBuffers(triVertices, 3, 168);
   draw(0);
@@ -542,9 +529,6 @@ function animate() {
     angle = i * (Math.PI/2) / numCircleVerts;
     x = (radius * Math.cos(angle));
     y = (radius * Math.sin(angle));
-    // defPt = deformCos(x, y, angle);
-    // fanVertices.push(x-10+defPt[0]);
-    // fanVertices.push(y+15+defPt[1]);
     fanVertices.push(x-10);
     fanVertices.push(y+15);
     fanVertices.push(z);
@@ -558,9 +542,6 @@ function animate() {
     angle = (Math.PI/2) + i * (Math.PI/2) / numCircleVerts;
     x = (radius * Math.cos(angle));
     y = (radius * Math.sin(angle));
-    // defPt = deformCos(x, y, angle);
-    // fanVertices.push(x+10+defPt[0]);
-    // fanVertices.push(y+15+defPt[1]);
     fanVertices.push(x+10);
     fanVertices.push(y+15);
     fanVertices.push(z);
@@ -574,9 +555,6 @@ function animate() {
     angle = (3*Math.PI/2) + i * (Math.PI/2) / numCircleVerts;
     x = (radius * Math.cos(angle));
     y = (radius * Math.sin(angle));
-    // defPt = deformCos(x, y, angle);
-    // fanVertices.push(x-10+defPt[0]);
-    // fanVertices.push(y-15+defPt[1]);
     fanVertices.push(x-10);
     fanVertices.push(y-15);
     fanVertices.push(z);
@@ -590,9 +568,6 @@ function animate() {
     angle = (Math.PI) + i * (Math.PI/2) / numCircleVerts;
     x = (radius * Math.cos(angle));
     y = (radius * Math.sin(angle));
-    // defPt = deformCos(x, y, angle);
-    // fanVertices.push(x+10+defPt[0]);
-    // fanVertices.push(y-15+defPt[1]);
     fanVertices.push(x+10);
     fanVertices.push(y-15);
     fanVertices.push(z);
@@ -602,76 +577,10 @@ function animate() {
   draw(1);
 }
 
-// /**
-//  * Populate vertex buffer with data
-//   @param {number} number of vertices to use around the circle boundary
-//  */
-// function loadVertices(numCircleVerts) {
-//   console.log("Frame",defAngle);
-//   //Generate the vertex positions    
-//   vertexPositionBuffer = gl.createBuffer();
-//   gl.bindBuffer(gl.ARRAY_BUFFER, vertexPositionBuffer);
-    
-//   // Start with vertex at the origin    
-//   var triangleVertices = [0.0,0.0,0.0];
-
-//   //Generate a triangle fan around origin
-//   var radius=0.5
-//   var z=0.0;    
-    
-//   for (i=0;i<=numCircleVerts;i++){
-//       angle = i *  2*Math.PI / numCircleVerts;
-//       x=(radius * Math.cos(angle));
-//       y=(radius * Math.sin(angle));
-//       var defPt = deformCos(x, y, angle);
-//       triangleVertices.push(x+defPt[0]);
-//       triangleVertices.push(y+defPt[1]);
-//       triangleVertices.push(z);
-//   }
-    
-//   gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(triangleVertices), gl.DYNAMIC_DRAW);
-//   vertexPositionBuffer.itemSize = 3;
-//   vertexPositionBuffer.numberOfItems = numCircleVerts+2;
-// }
-
 /**
- * Documentation for this function is available on the slides, dummy
- * Deforms coordinates lol
+ * Animation to be called from tick. Updates globals and performs custom animation for each tick.
  */
-function deformCos(x, y, angle) {
-  var circPt = vec2.fromValues(x, y);
-  var dist = 0.2*Math.cos((angle)+degToRad(defAngle));
-  vec2.normalize(circPt, circPt);
-  vec2.scale(circPt, circPt, dist);
-  return circPt;
-}
-  
-/**
- * Tick called for every animation frame.
- */
-function tick() {
-  requestAnimFrame(tick);
-  gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-  
-  if (mode == 0) {
-    animate();
-  }
-  else if (mode == 1) {
-    animate_shit();
-  }
-}
-
-/**
- * List of questions
- * -----------------
- * 1. How can I still keep the black background when I do multiple draw calls? see the commented line in the draw function
- * 2. I can't get my fan to show up!
- * 3. Review animation pipeline
- */
-
-
-
-function animate_shit() { 
+function animate_2() { 
   colfac += (colsign * 0.01);
   if (colfac >= 2) {
     colsign *= -1;
@@ -679,9 +588,10 @@ function animate_shit() {
   if (colfac <= 1) {
     colsign *= -1;
   }
-  console.log(colfac);
+
   defAngle = (defAngle+1.0) % 1000;
 
+  // select colors, update each region at a different time
   if (defAngle % 250 == 0) {
     colorlad1 = [Math.random(), Math.random(), Math.random(), colfac-1];
   }
@@ -698,6 +608,7 @@ function animate_shit() {
     colorlad5 = [Math.random(), Math.random(), Math.random(), colfac-1];
   }
 
+  // fade ins and fade outs of colors
   if (defAngle % 4 == 0 && (colfac - 1) < 0.9){
     colorlad1[3] = colfac - 1;
     colorlad2[3] = colfac - 1;
@@ -706,19 +617,8 @@ function animate_shit() {
     colorlad5[3] = colfac - 1;
   }
 
-  
-
-  // transRights = [10, 0, 0];
-
-  // var tmpMatrix = mat4.create();
-  // var tmp2Matrix = mat4.create();
-  // mvMatrix = mat4.create();
   mat4.fromZRotation(mvMatrix, degToRad(0));  
-  // mat4.scale(tmp2Matrix, tmp2Matrix, [scalefac, scalefac, scalefac]);
-  // mat4.fromTranslation(mvMatrix, transRights);
-  
-  // mat4.multiply(mvMatrix, tmp2Matrix, tmpMatrix);
-
+ 
   gl.uniformMatrix4fv(shaderProgram.uMVMatrixUniform, false, mvMatrix);
 
   mat4.ortho(pMatrix, -100, 100, -100, 100, -100, 100);
@@ -726,8 +626,7 @@ function animate_shit() {
   
   vColor = gl.getUniformLocation(shaderProgram, "vColor");
 
-  //change color to orange and setup buffer for orange I
-  // 0.909, 0.290, 0.152, 1.0
+  // define the square and the surrounding 4 trapezoids
   gl.uniform4fv( vColor, new Float32Array(colorlad1) );
 
   triVertices = [
@@ -742,8 +641,6 @@ function animate_shit() {
   setupBuffers(triVertices, 3, 6); //provide arguments with colors and coordinates, as well as num of items and shits
   draw(0);  
 
-  //change color to blue and setup buffer for blue border!
-  // 0.074, 0.160, 0.294, 1.0
   gl.uniform4fv( vColor, new Float32Array(colorlad2) );
   triVertices = [
     -50,  50,  0.0, // top arc 18
@@ -796,42 +693,19 @@ function animate_shit() {
   setupBuffers(triVertices, 3, 6);
   draw(0);
 
-  // fanVertices = [10, 15, 0];
-  // for (i = 0; i <= numCircleVerts; i++) {
-  //   angle = (Math.PI/2) + i * (Math.PI/2) / numCircleVerts;
-  //   x = (radius * Math.cos(angle));
-  //   y = (radius * Math.sin(angle));
-  //   fanVertices.push(x+10);
-  //   fanVertices.push(y+15);
-  //   fanVertices.push(z);
-  // }
-
-  // setupBuffers(fanVertices, 3, numCircleVerts+2);
-  // draw(1);
-
-  // fanVertices = [-10, -15, 0];
-  // for (i = 0; i <= numCircleVerts; i++) {
-  //   angle = (3*Math.PI/2) + i * (Math.PI/2) / numCircleVerts;
-  //   x = (radius * Math.cos(angle));
-  //   y = (radius * Math.sin(angle));
-  //   fanVertices.push(x-10);
-  //   fanVertices.push(y-15);
-  //   fanVertices.push(z);
-  // }
-
-  // setupBuffers(fanVertices, 3, numCircleVerts+2);
-  // draw(1);
-
-  // fanVertices = [10, -15, 0];
-  // for (i = 0; i <= numCircleVerts; i++) {
-  //   angle = (Math.PI) + i * (Math.PI/2) / numCircleVerts;
-  //   x = (radius * Math.cos(angle));
-  //   y = (radius * Math.sin(angle));
-  //   fanVertices.push(x+10);
-  //   fanVertices.push(y-15);
-  //   fanVertices.push(z);
-  // }
-
-  // setupBuffers(fanVertices, 3, numCircleVerts+2);
-  // draw(1);
+}
+  
+/**
+ * Tick called for every animation frame.
+ */
+function tick() {
+  requestAnimFrame(tick);
+  gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+  
+  if (anim_value == "Illini") {
+    animate();
+  }
+  else if (anim_value == "Custom") {
+    animate_2();
+  }
 }
