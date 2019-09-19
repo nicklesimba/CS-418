@@ -28,10 +28,25 @@
 
     <script src="gl-matrix-min.js"></script>
     <script src="webgl-utils.js"></script>
+    <script src="initial.js"></script>
     <script src="mp1.js"></script>
 
-    <body onload="startup();">
+    <p>Select an animation:</p>
+
+    <div>
+    <input type="radio" id="Illini" name="anim" value="Illini" checked>
+    <label for="A">Illini I</label>
+    </div>
+
+    <div>
+    <input type="radio" id="Custom" name="anim" value="Custom">
+    <label for="dewey">Custom Animation</label>
+    </div>
+
+    <body onload="startmeme();">
+        
         <canvas id="myGLCanvas" width="500" height="500"></canvas>
+
     </body>
 
 </html>
