@@ -21,6 +21,9 @@ var vertexColorBuffer;
 /** @global The angle of rotation around the x axis */
 var defAngle = 0;
 
+/** @global The timer for the custom animation */
+var animTimer = 0;
+
 /** @global The amount of translation in the x direction*/
 var transRights = [0, 0, 0];
 
@@ -581,6 +584,8 @@ function animate() {
  * Animation to be called from tick. Updates globals and performs custom animation for each tick.
  */
 function animate_2() { 
+  defAngle = 0;
+  
   colfac += (colsign * 0.01);
   if (colfac >= 2) {
     colsign *= -1;
@@ -589,27 +594,27 @@ function animate_2() {
     colsign *= -1;
   }
 
-  defAngle = (defAngle+1.0) % 1000;
+  animTimer = (animTimer+1.0) % 1000;
 
   // select colors, update each region at a different time
-  if (defAngle % 250 == 0) {
+  if (animTimer % 250 == 0) {
     colorlad1 = [Math.random(), Math.random(), Math.random(), colfac-1];
   }
-  if (defAngle % 500 == 6) {
+  if (animTimer % 500 == 6) {
     colorlad2 = [Math.random(), Math.random(), Math.random(), colfac-1];
   }
-  if (defAngle % 500 == 9) {
+  if (animTimer % 500 == 9) {
     colorlad3 = [Math.random(), Math.random(), Math.random(), colfac-1];
   }
-  if (defAngle % 500 == 11) {
+  if (animTimer % 500 == 11) {
     colorlad4 = [Math.random(), Math.random(), Math.random(), colfac-1];
   }
-  if (defAngle % 500 == 13) {
+  if (animTimer % 500 == 13) {
     colorlad5 = [Math.random(), Math.random(), Math.random(), colfac-1];
   }
 
   // fade ins and fade outs of colors
-  if (defAngle % 4 == 0 && (colfac - 1) < 0.9){
+  if (animTimer % 4 == 0 && (colfac - 1) < 0.9){
     colorlad1[3] = colfac - 1;
     colorlad2[3] = colfac - 1;
     colorlad3[3] = colfac - 1;
