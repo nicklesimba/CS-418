@@ -195,8 +195,8 @@ function draw(modeSelect) {
     gl.enableVertexAttribArray(shaderProgram.vertexPositionAttribute);
   
     // gl.bindBuffer(gl.ARRAY_BUFFER, vertexColorBuffer);
-    gl.vertexAttribPointer(shaderProgram.vertexColorAttribute, 4, gl.FLOAT, false, 0, 0);
-    gl.enableVertexAttribArray(shaderProgram.vertexColorAttribute);
+    // gl.vertexAttribPointer(shaderProgram.vertexColorAttribute, 4, gl.FLOAT, false, 0, 0);
+    // gl.enableVertexAttribArray(shaderProgram.vertexColorAttribute);
     setMatrixUniforms();
     if (modeSelect) {
       gl.drawArrays(gl.TRIANGLE_FAN, 0, vertexPositionBuffer.numberOfItems);
