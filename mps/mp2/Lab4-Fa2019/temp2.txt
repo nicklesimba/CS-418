@@ -1,11 +1,3 @@
-<!DOCTYPE HTML> 
-<html lang="en"> 
-<head>
-<title>Hello Terrain </title>
-<meta charset="utf-8"> 
-</head>
-
-    
 <script id="shader-vs" type="x-shader/x-vertex">
     attribute vec3 aVertexNormal;
   attribute vec3 aVertexPosition;
@@ -66,21 +58,3 @@
                 + (uSpecularLightColor*uKSpecular) * specularLightWeightning),1.0);
   }
 </script>
-
-<script src="gl-matrix-min.js"></script> 
-<script src="webgl-utils.js"></script> 
-<script src="Terrain.js"></script>  
-<script src="HelloTerrain.js"></script>   
-<body onload="startup();">
- <canvas id="myGLCanvas" width="800" height="800"></canvas>
-    <form id="input_form">
-        <fieldset>
-            <legend>Rendering Parameters</legend>
-         <input type="radio" name="primitive" id="wireframe" value="wireframe"> Wireframe
-         <input type="radio" name="primitive" id="polygon" id="polygon" value="polygon" checked> Polygon
-         <input type="radio" name="primitive" id="wirepoly" value="wirepoly" > Polygon with Edges  
-        </fieldset>
-        </form>
-</body>
-
-</html>

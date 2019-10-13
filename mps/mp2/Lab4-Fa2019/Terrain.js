@@ -43,9 +43,16 @@ class Terrain{
         console.log("Terrain: Generated lines");
 
         for (var i = 0; i <= this.div; i++) {
-            console.log(this.nBuffer[(this.div+1)*(this.div+1) + 3*i]);
-            console.log(this.nBuffer[(this.div+1)*(this.div+1) + 3*i + 1]);
-            console.log(this.nBuffer[(this.div+1)*(this.div+1) + 3*i + 2]);
+            for (var j = 0; j <= this.div; j++) {
+                // console.log("vertex " + (i*(this.div+1) + j) + ": ");
+                // console.log(this.vBuffer[3*(i*(this.div+1) + j)]);
+                // console.log(this.vBuffer[3*(i*(this.div+1) + j) + 1]);
+                // console.log(this.vBuffer[3*(i*(this.div+1) + j) + 2]);
+                console.log("normal " + (i*(this.div+1) + j) + ": ");
+                console.log(this.nBuffer[3*(i*(this.div+1) + j)]);
+                console.log(this.nBuffer[3*(i*(this.div+1) + j) + 1]);
+                console.log(this.nBuffer[3*(i*(this.div+1) + j) + 2]);    
+            }
         }
         
         // Get extension for 4 byte integer indices for drwElements
@@ -240,9 +247,9 @@ setHeightsByPartition(N, delta)
                 // console.log(3*j*this.div + 3*k);
                 // console.log(3*j*this.div + 3*k + 1);
                 // console.log(3*j*this.div + 3*k + 2);
-                tmp[0] = this.vBuffer[3*j*this.div + 3*k];
-                tmp[1] = this.vBuffer[3*j*this.div + 3*k + 1];
-                tmp[2] = this.vBuffer[3*j*this.div + 3*k + 2];
+                tmp[0] = this.vBuffer[3*(j*(this.div+1) + k)];
+                tmp[1] = this.vBuffer[3*(j*(this.div+1) + k) + 1];
+                tmp[2] = this.vBuffer[3*(j*(this.div+1) + k) + 2];
                 // console.log("tmp orig: " + tmp);
 
                 vec3.subtract(tmp, tmp, partitionPoint);
@@ -250,11 +257,11 @@ setHeightsByPartition(N, delta)
 
                 if (vec3.dot(tmp, partitionNorm) > 0) {
                     // console.log("up we go!")
-                    this.vBuffer[3*j*this.div + 3*k + 2] += delta;
+                    this.vBuffer[3*(j*(this.div+1) + k) + 2] += delta;
                 }
                 else if (vec3.dot(tmp, partitionNorm) < 0) {
                     // console.log("down we go!")
-                    this.vBuffer[3*j*this.div + 3*k + 2] -= delta;
+                    this.vBuffer[3*(j*(this.div+1) + k) + 2] -= delta;
                 }
             }
         }
@@ -265,8 +272,6 @@ setHeightsByPartition(N, delta)
  * Computes normal vectors for terrain
  */ 
 generateNormals() {
-    var tmp1 = vec3.create();
-    var tmp2 = vec3.create();
     var N1 = vec3.create();
     var N2 = vec3.create();
     // console.log("tmp1: " + tmp1);
