@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <title>MP1</title>
+        <meta charset="utf-8">
+    </head>
+
+    <script id="shader-vs" type="x-shader/x-vertex">
+    attribute vec4 aVertexColor;
+    attribute vec3 aVertexPosition;
+
+    uniform mat4 uMVMatrix;
+    uniform mat4 uPMatrix;
+    varying vec4 vColor;
+    void main(void) {
+        gl_Position = uPMatrix*uMVMatrix*vec4(aVertexPosition, 1.0);
+        vColor = aVertexColor;
+    }
+    </script>
+
+    <script id="shader-fs" type="x-shader/x-fragment">
+    precision mediump float;
+    uniform vec4 vColor;
+    void main(void) {
+        gl_FragColor = vColor;
+    }
+    </script>
+
+    <script src="gl-matrix-min.js"></script>
+    <script src="webgl-utils.js"></script>
+    <script src="initial.js"></script>
+    <script src="mp1.js"></script>
+
+    <p>Select an animation:</p>
+
+    <div>
+    <input type="radio" id="Illini" name="anim" value="Illini" checked>
+    <label for="A">Illini I</label>
+    </div>
+
+    <div>
+    <input type="radio" id="Custom" name="anim" value="Custom">
+    <label for="dewey">Custom Animation</label>
+    </div>
+
+    <body onload="startmeme();">
+        
+        <canvas id="myGLCanvas" width="500" height="500"></canvas>
+
+    </body>
+
+</html>
