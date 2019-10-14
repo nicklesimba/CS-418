@@ -42,18 +42,18 @@ class Terrain{
         this.generateLines();
         console.log("Terrain: Generated lines");
 
-        for (var i = 0; i <= this.div; i++) {
-            for (var j = 0; j <= this.div; j++) {
-                // console.log("vertex " + (i*(this.div+1) + j) + ": ");
-                // console.log(this.vBuffer[3*(i*(this.div+1) + j)]);
-                // console.log(this.vBuffer[3*(i*(this.div+1) + j) + 1]);
-                // console.log(this.vBuffer[3*(i*(this.div+1) + j) + 2]);
-                console.log("normal " + (i*(this.div+1) + j) + ": ");
-                console.log(this.nBuffer[3*(i*(this.div+1) + j)]);
-                console.log(this.nBuffer[3*(i*(this.div+1) + j) + 1]);
-                console.log(this.nBuffer[3*(i*(this.div+1) + j) + 2]);    
-            }
-        }
+        // for (var i = 0; i <= this.div; i++) {
+        //     for (var j = 0; j <= this.div; j++) {
+        //         // console.log("vertex " + (i*(this.div+1) + j) + ": ");
+        //         // console.log(this.vBuffer[3*(i*(this.div+1) + j)]);
+        //         // console.log(this.vBuffer[3*(i*(this.div+1) + j) + 1]);
+        //         // console.log(this.vBuffer[3*(i*(this.div+1) + j) + 2]);
+        //         console.log("normal " + (i*(this.div+1) + j) + ": ");
+        //         console.log(this.nBuffer[3*(i*(this.div+1) + j)]);
+        //         console.log(this.nBuffer[3*(i*(this.div+1) + j) + 1]);
+        //         console.log(this.nBuffer[3*(i*(this.div+1) + j) + 2]);    
+        //     }
+        // }
         
         // Get extension for 4 byte integer indices for drwElements
         var ext = gl.getExtension('OES_element_index_uint');
@@ -76,6 +76,21 @@ class Terrain{
         this.vBuffer[vid+1] = v[1];
         this.vBuffer[vid+2] = v[2];
     }
+
+    /**
+    * Update the x,y,z coords of a normal at location(i,j)
+    * @param {Object} n an an array of length 3 holding x,y,z coordinates
+    * @param {number} i the ith row of vertices
+    * @param {number} j the jth column of vertices
+    */
+   updateNormal(n,i,j)
+   {
+       //Your code here
+       var vid = 3*(i*(this.div+1) + j);
+       this.nBuffer[vid] += n[0];
+       this.nBuffer[vid+1] += n[1];
+       this.nBuffer[vid+2] += n[2];
+   }
     
     /**
     * Return the x,y,z coordinates of a vertex at location (i,j)
@@ -272,33 +287,73 @@ setHeightsByPartition(N, delta)
  * Computes normal vectors for terrain
  */ 
 generateNormals() {
-    var N1 = vec3.create();
-    var N2 = vec3.create();
+    var N = vec3.create();
+    var tmp1 = vec3.create();
+    var tmp2 = vec3.create();
+    var tmp3 = vec3.create();
+    var subbylad1 = vec3.create();
+    var subbylad2 = vec3.create();
     // console.log("tmp1: " + tmp1);
     // console.log("tmp2: " + tmp2);
 
-    // Calculate the johns!
-    for (var i = 0; i <= this.div; i++) {
-        for (var j = 0; j <= this.div; j++) {
-            var vid = i*(this.div+1) + j;
+    // Calculate the johns!          THIS SHOULD BE <, not <=. DONT RANDOMLY CHANGE THIS, IDIOT.
+    for (var i = 0; i < this.div; i++) {
+        for (var j = 0; j < this.div; j++) {
+            // First triangle in "square div"
+            this.getVertex(tmp1,i,j);
+            this.getVertex(tmp2,i,j+1);
+            this.getVertex(tmp3,i+1,j);
+
+            vec3.sub(subbylad1, tmp2, tmp1);
+            vec3.sub(subbylad2, tmp3, tmp1);
+            vec3.cross(N, subbylad1, subbylad2);
+            vec3.normalize(N, N);
+
+            this.updateNormal(N, i, j);
+            this.updateNormal(N, i, j+1);
+            this.updateNormal(N, i+1, j);
             
-            N1 = (this.vBuffer[vid+1] - this.vBuffer[vid]) * (this.vBuffer[vid+this.div+1] - this.vBuffer[vid]);
+            // Second triangle in "square div"
+            this.getVertex(tmp1,i,j+1);
+            this.getVertex(tmp2,i+1,j+1);
+            this.getVertex(tmp3,i+1,j);
+
+            vec3.sub(subbylad1, tmp2, tmp1);
+            vec3.sub(subbylad2, tmp3, tmp1);
+            vec3.cross(N, subbylad1, subbylad2);
+            vec3.normalize(N, N);
+
+            this.updateNormal(N, i, j+1);
+            this.updateNormal(N, i+1, j+1);
+            this.updateNormal(N, i+1, j);
+           
+            // this.vBuffer[vid]
             // vec3.sub(tmp1, this.vBuffer[vid+1], this.vBuffer[vid]);
             // vec3.sub(tmp2, this.vBuffer[vid+this.div+1], this.vBuffer[vid]);
             // N1 = vec3.cross(tmp1, tmp2);
-            N2 = (this.vBuffer[vid+1+this.div+1] - this.vBuffer[vid+1]) * (this.vBuffer[vid+this.div+1] - this.vBuffer[vid+1]);
+            
             // vec3.sub(tmp1, this.vBuffer[vid+1+this.div+1], this.vBuffer[vid+1]);
             // vec3.sub(tmp2, this.vBuffer[vid+this.div+1], this.vBuffer[vid+1]);
             // N2 = vec3.cross(tmp1, tmp2);
             
-            this.nBuffer[vid] += this.nBuffer[vid]+N1;
-            this.nBuffer[vid+1] += this.nBuffer[vid+1]+N1;
-            this.nBuffer[vid+this.div+1] += this.nBuffer[vid+this.div+1]+N1;
+            // this.nBuffer[vid] = this.nBuffer[vid]+N1;
+            // this.nBuffer[vid+1] = this.nBuffer[vid+1]+N1;
+            // this.nBuffer[vid+this.div+1] = this.nBuffer[vid+this.div+1]+N1;
 
-            this.nBuffer[vid+1] += this.nBuffer[vid+1]+N2;
-            this.nBuffer[vid+1+this.div+1] += this.nBuffer[vid+1+this.div+1]+N2;
-            this.nBuffer[vid+this.div+1] += this.nBuffer[vid+this.div+1]+N2;
+            // this.nBuffer[vid+1] = this.nBuffer[vid+1]+N2;
+            // this.nBuffer[vid+1+this.div+1] = this.nBuffer[vid+1+this.div+1]+N2;
+            // this.nBuffer[vid+this.div+1] = this.nBuffer[vid+this.div+1]+N2;
             
+
+            /*
+            this.fBuffer.push(vid);
+            this.fBuffer.push(vid+1);
+            this.fBuffer.push(vid+this.div+1);
+
+            this.fBuffer.push(vid+1);
+            this.fBuffer.push(vid+1+this.div+1);
+            this.fBuffer.push(vid+this.div+1);
+            */
         }
     }
 

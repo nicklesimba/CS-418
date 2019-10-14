@@ -63,6 +63,7 @@ var lSpecular =[0,0,0];
 var kAmbient = [1.0,1.0,1.0];
 /** @global Diffuse material color/intensity for Phong reflection */
 var kTerrainDiffuse = [205.0/255.0,163.0/255.0,63.0/255.0];
+// var kTerrainDiffuse = [0.0/255.0,163.0/255.0,63.0/255.0];
 /** @global Specular material color/intensity for Phong reflection */
 var kSpecular = [0.0,0.0,0.0];
 /** @global Shininess exponent for Phong reflection */
@@ -286,7 +287,7 @@ function setLightUniforms(loc,a,d,s) {
  * Populate buffers with data
  */
 function setupBuffers() {
-    myTerrain = new Terrain(2,-0.5,0.5,-0.5,0.5);
+    myTerrain = new Terrain(64,-0.5,0.5,-0.5,0.5);
     myTerrain.loadBuffers();
 }
 
