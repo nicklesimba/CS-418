@@ -47,16 +47,19 @@ var viewDir = vec3.fromValues(0.0,0.0,-1.0);
 var up = vec3.fromValues(0.0,1.0,0.0);
 /** @global Location of a point along viewDir in world coordinates */
 var viewPt = vec3.fromValues(0.0,0.0,0.0);
+/** @global Location of origin */
+var origPt = vec3.fromValues(0.0,0.0,0.0);
 
 //Light parameters
 /** @global Light position in VIEW coordinates */
-var lightPosition = [0,3,3];
+var lightPosition = [20, 20, -15];
+// var lightPosition = [0.5,0.5,0.0];
 /** @global Ambient light color/intensity for Phong reflection */
-var lAmbient = [0,0,0];
+var lAmbient = [0.1,0.1,0.1];
 /** @global Diffuse light color/intensity for Phong reflection */
 var lDiffuse = [1,1,1];
 /** @global Specular light color/intensity for Phong reflection */
-var lSpecular =[0,0,0];
+var lSpecular =[0.4,0.4,0.4];
 
 //Material parameters
 /** @global Ambient material color/intensity for Phong reflection */
@@ -65,9 +68,9 @@ var kAmbient = [1.0,1.0,1.0];
 var kTerrainDiffuse = [205.0/255.0,163.0/255.0,63.0/255.0];
 // var kTerrainDiffuse = [0.0/255.0,163.0/255.0,63.0/255.0];
 /** @global Specular material color/intensity for Phong reflection */
-var kSpecular = [0.0,0.0,0.0];
+var kSpecular = [1,1,1];
 /** @global Shininess exponent for Phong reflection */
-var shininess = 23;
+var shininess = 30;
 /** @global Edge color fpr wireframeish rendering */
 var kEdgeBlack = [0.0,0.0,0.0];
 /** @global Edge color for wireframe rendering */
@@ -297,6 +300,14 @@ function setupBuffers() {
  */
 function draw() { 
     //console.log("function draw()")
+    // if (lightPosition[0] < 1) {
+    //   lightPosition[0] += 0.005;
+    // }
+    // if (lightPosition[0] >= 1) {
+    //   lightPosition[0] = 0.0;
+    // }
+    // console.log(lightPosition);
+
     var transformVec = vec3.create();
   
     gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight);
@@ -305,10 +316,11 @@ function draw() {
     // We'll use perspective 
     mat4.perspective(pMatrix,degToRad(45), 
                      gl.viewportWidth / gl.viewportHeight,
-                     0.1, 200.0);
+                     0.5, 200.0);
 
-    // We want to look down -z, so create a lookat point in that direction    
+    // We want to look down -z, so create a lookat point in that direction   
     vec3.add(viewPt, eyePt, viewDir);
+    // vec3.rotateX(viewPt, viewPt, origPt, Math.Pi/5);
     // Then generate the lookat matrix and initialize the MV matrix to that view
     mat4.lookAt(mvMatrix,eyePt,viewPt,up);    
  

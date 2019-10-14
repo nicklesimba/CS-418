@@ -125,13 +125,13 @@ void main(void) {
     vec3 viewVectorEye = -normalize(vPosition);
     
     // PHONG SHADING
-    float rdotv = max(dot(reflectionVector, viewVectorEye), 0.0);
-    float specularLightWeightning = pow(rdotv, uShininess);
+    //float rdotv = max(dot(reflectionVector, viewVectorEye), 0.0);
+    //float specularLightWeightning = pow(rdotv, uShininess);
     
     // BLINN-PHONG - shininess 
-    // vec3 halfwayVector = normalize(vectorToLightSource + viewVectorEye);
-    // float ndoth = max(dot(normalEye, halfwayVector), 0.0);
-    // float specularLightWeightning = pow(ndoth, uShininess);
+    vec3 halfwayVector = normalize(vectorToLightSource + viewVectorEye);
+    float ndoth = max(dot(normalEye, halfwayVector), 0.0);
+    float specularLightWeightning = pow(ndoth, uShininess);
 
     // Sum up all three reflection components and send to the fragment shader
     gl_FragColor = vec4(((uAmbientLightColor*uAmbientMaterialColor)

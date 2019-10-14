@@ -46,6 +46,8 @@
   
   uniform float uShininess;
 
+  // float shininesslad = 0.01;
+
   void main(void) {
     vec3 vecPos = vertexPosition;
 
@@ -62,8 +64,8 @@
     vec3 viewVectorEye = -normalize(vPosition);
     
     // PHONG SHADING
-    // float rdotv = max(dot(reflectionVector, viewVectorEye), 0.0);
-    // float specularLightWeightning = pow(rdotv, uShininess);
+    //float rdotv = max(dot(reflectionVector, viewVectorEye), 0.0);
+    //float specularLightWeightning = pow(rdotv, uShininess);
     
     // BLINN-PHONG
     vec3 halfwayVector = normalize(vectorToLightSource + viewVectorEye);
