@@ -40,7 +40,7 @@ var myTerrain;
 
 // View parameters
 /** @global Location of the camera in world coordinates */
-var eyePt = vec3.fromValues(0.0,0.3,-0.5);
+var eyePt = vec3.fromValues(0.0,0.5,-0.5);
 /** @global Direction of the view in world coordinates */
 var viewDir = vec3.fromValues(0.0,0.0,-1.0);
 /** @global Up vector for view matrix creation, in world coordinates */
@@ -55,9 +55,9 @@ var origPt = vec3.fromValues(0.0,0.0,0.0);
 var lightPosition = [-20, 20, -5];
 // var lightPosition = [0.5,0.5,0.0];
 /** @global Ambient light color/intensity for Phong reflection */
-var lAmbient = [0.1,0.1,0.1];
+var lAmbient = [0.3,0.3,0.3];
 /** @global Diffuse light color/intensity for Phong reflection */
-var lDiffuse = [0.5,0.5,0.5];
+var lDiffuse = [1,1,1];
 /** @global Specular light color/intensity for Phong reflection */
 var lSpecular =[0.4,0.4,0.4];
 
@@ -76,9 +76,27 @@ var kEdgeBlack = [0.0,0.0,0.0];
 /** @global Edge color for wireframe rendering */
 var kEdgeWhite = [1.0,1.0,1.0];
 
-/** @global An object holding the geometry for a 3D terrain */
-var myQuaternion = quat.create();
+/** @global X, Y, and Z euler angles (initially) */
+// var xRot = [0, 0, 0];
+// var yRot = [0, 0, 0];
+// var zRot = [0, 0, 0];
+var xRot = 0;
+var yRot = 0;
+var zRot = 0;
 
+/** @global X, Y, and Z axes variables (unused) */
+var xAxis = [1, 0, 0];
+var yAxis = [0, 1, 0];
+var zAxis = [0, 0, 1];
+
+/** @global quaternion that records current orientation of viewer */
+var currRot = quat.create();
+
+/** @global quaternion that records contributions from keyboard inputs */
+var tempRot = quat.create();
+
+/** @global plane throttle */
+var speedfactor = 0.3;
 
 //-------------------------------------------------------------------------
 /**
@@ -324,6 +342,7 @@ void CameraFPSQuaternion::UpdateView()
 function draw() { 
 
     var transformVec = vec3.create();
+
   
     gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
@@ -333,18 +352,15 @@ function draw() {
                      gl.viewportWidth / gl.viewportHeight,
                      0.5, 200.0);
 
-    // We want to look down -z, so create a lookat point in that direction   
-    vec3.add(viewPt, eyePt, viewDir);
+    mat4.fromQuat(mvMatrix, currRot);
     
-    // Then generate the lookat matrix and initialize the MV matrix to that view
-    mat4.lookAt(mvMatrix,eyePt,viewPt,up);    
- 
-    //Draw Terrain
-    mvPushMatrix();
     vec3.set(transformVec,0.0,-0.25,-2.0);
-    mat4.translate(mvMatrix, mvMatrix,transformVec);
+    mat4.translate(mvMatrix, mvMatrix,transformVec); // commenting this out moves us away from the model
     mat4.rotateY(mvMatrix, mvMatrix, degToRad(viewRot));
-    mat4.rotateX(mvMatrix, mvMatrix, degToRad(-75));
+    mat4.rotateX(mvMatrix, mvMatrix, degToRad(-75)); // commenting this out gives us a top down view
+
+    mvPushMatrix();
+    
     setMatrixUniforms();
     setLightUniforms(lightPosition,lAmbient,lDiffuse,lSpecular);
     
@@ -393,6 +409,27 @@ function draw() {
   gl.enable(gl.DEPTH_TEST);
   document.onkeydown = handleKeyDown;
   document.onkeyup = handleKeyUp;
+
+  // We want to look down -z, so create a lookat point in that direction   
+  vec3.add(viewPt, eyePt, viewDir);
+    
+  // quaternion approach for the plane
+  // var qPitch = quat.create();
+  // quat.setAxisAngle(qPitch, xAxis, );
+
+  // Then generate the lookat matrix and initialize the MV matrix to that view
+  mat4.lookAt(mvMatrix,eyePt,viewPt,up);
+
+  //Draw Terrain
+  var transformVec = vec3.create();
+  vec3.set(transformVec,0.0,-0.25,-2.0);
+  mat4.translate(mvMatrix, mvMatrix, transformVec); // commenting this out moves us away from the model
+  mat4.rotateY(mvMatrix, mvMatrix, degToRad(viewRot));
+  mat4.rotateX(mvMatrix, mvMatrix, degToRad(-75)); // commenting this out gives us a top down view
+  mvPushMatrix();
+
+  fromEuler(currRot, xRot, yRot, zRot);
+
   tick();
 }
 
@@ -409,7 +446,7 @@ function tick() {
       lightPosition[0] += 0.15;
     }
     else if (lightPosition[0] < 20 && lightPosition[0] >= -20) {
-      lightPosition[0] += 0.05;
+      lightPosition[0] += 0.025;
     }
     else if (lightPosition[0] >= 20 && lightPosition[0] < 100) {
       lightPosition[0] += 0.15;
@@ -418,37 +455,50 @@ function tick() {
       lightPosition[0] = -100;
     }
     
-    // uncomment this later! This is the plane's thrust! it should not be "eyePt[2]" but rather move eye point in direction of current viewDir
-    // eyePt[2] -= 0.0015;
     animate();
-    console.log(eyePt);
 }
 
 /**
  * Code for updating model transforms
  */
 function animate() {
+  if (currentlyPressedKeys["w"]) {
+    quat.setAxisAngle(tempRot, xAxis, 0.01);
+    quat.mul(currRot, tempRot, currRot);
+  }
+  else if (currentlyPressedKeys["s"]) {
+    quat.setAxisAngle(tempRot, xAxis, -0.01);
+    quat.mul(currRot, tempRot, currRot);
+  }
   if (currentlyPressedKeys["a"]) {
-    eulerY -= 1;
+    quat.setAxisAngle(tempRot, zAxis, -0.01);
+    quat.mul(currRot, tempRot, currRot);
   }
-  if (currentlyPressedKeys["d"]) {
-    eulerY += 1;
+  else if (currentlyPressedKeys["d"]) {
+    quat.setAxisAngle(tempRot, zAxis, 0.01);
+    quat.mul(currRot, tempRot, currRot);
+  }
+  if (currentlyPressedKeys["z"]) {
+    quat.setAxisAngle(tempRot, yAxis, -0.0025);
+    quat.mul(currRot, tempRot, currRot);
+  }
+  else if (currentlyPressedKeys["c"]) {
+    quat.setAxisAngle(tempRot, yAxis, 0.0025);
+    quat.mul(currRot, tempRot, currRot);
   }
 
-  // temporary! should work automatically
-  if (currentlyPressedKeys["o"]) {
-    eyePt[2] -= 0.0015;
+  if (currentlyPressedKeys["-"]) {
+    speedfactor -= 0.1;
   }
-  if (currentlyPressedKeys["l"]) {
-    eyePt[2] += 0.0015;
+  if (currentlyPressedKeys["+"]) {
+    speedfactor += 0.1;
   }
-  // if (currentlyPressedKeys["-"]) {
-    
-  // }
-  // if (currentlyPressedKeys["="]) {
-    
-  // }
-
+  // console.log(mvMatrix);
+  // console.log(mvMatrix[2]);
+  // console.log(mvMatrix[6]);
+  // console.log(mvMatrix[10]);
+  var john = vec3.fromValues(mvMatrix[2], mvMatrix[6], mvMatrix[10]);
+  mat4.translate(mvMatrix, mvMatrix, vec3.fromValues(1, 2, 3));
 }
 
 /**
