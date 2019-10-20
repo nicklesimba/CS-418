@@ -55,11 +55,11 @@ var origPt = vec3.fromValues(0.0,0.0,0.0);
 var lightPosition = [-20, 20, -5];
 // var lightPosition = [0.5,0.5,0.0];
 /** @global Ambient light color/intensity for Phong reflection */
-var lAmbient = [0.3,0.3,0.3];
+var lAmbient = [0.4,0.4,0.4];
 /** @global Diffuse light color/intensity for Phong reflection */
 var lDiffuse = [1,1,1];
 /** @global Specular light color/intensity for Phong reflection */
-var lSpecular =[0.4,0.4,0.4];
+var lSpecular =[0.5,0.5,0.5];
 
 //Material parameters
 /** @global Ambient material color/intensity for Phong reflection */
@@ -96,7 +96,8 @@ var currRot = quat.create();
 var tempRot = quat.create();
 
 /** @global plane throttle */
-var speedfactor = 0.3;
+var speed = 0.001;
+var move = 0.0;
 
 //-------------------------------------------------------------------------
 /**
@@ -311,29 +312,9 @@ function setLightUniforms(loc,a,d,s) {
  * Populate buffers with data
  */
 function setupBuffers() {
-    myTerrain = new Terrain(128,-2.0,2.0,-2.0,2.0);
+    myTerrain = new Terrain(256,-4.0,4.0,-4.0,4.0);
     myTerrain.loadBuffers();
 }
-
-/**
-void CameraFPSQuaternion::UpdateView()
-{
-  //FPS camera:  RotationX(pitch) * RotationY(yaw)
-  glm::quat qPitch = glm::angleAxis(pitch, glm::vec3(1, 0, 0));
-  glm::quat qYaw = glm::angleAxis(yaw, glm::vec3(0, 1, 0));
-  glm::quat qRoll = glm::angleAxis(roll,glm::vec3(0,0,1));  
- 
-  //For a FPS camera we can omit roll
-  glm::quat orientation = qPitch * qYaw;
-  orientation = glm::normalize(orientation);
-  glm::mat4 rotate = glm::mat4_cast(orientation);
- 
-  glm::mat4 translate = glm::mat4(1.0f);
-  translate = glm::translate(translate, -eye);
- 
-  viewMatrix = rotate * translate;
-}
- */
 
 //----------------------------------------------------------------------------------
 /**
@@ -355,9 +336,23 @@ function draw() {
     mat4.fromQuat(mvMatrix, currRot);
     
     vec3.set(transformVec,0.0,-0.25,-2.0);
+
     mat4.translate(mvMatrix, mvMatrix,transformVec); // commenting this out moves us away from the model
+    
+    move += speed;
+    
+    console.log(move);
+
+    var viewDir = vec3.fromValues(0,0,move);
+    var inverted = quat.create();
+    vec3.transformQuat(viewDir, viewDir, quat.invert(inverted, currRot));
+    console.log(viewDir);
+    // vec3.multiply(viewDir, viewDir, [speed, speed, speed]);
+    mat4.translate(mvMatrix, mvMatrix,viewDir);
+    
     mat4.rotateY(mvMatrix, mvMatrix, degToRad(viewRot));
     mat4.rotateX(mvMatrix, mvMatrix, degToRad(-75)); // commenting this out gives us a top down view
+
 
     mvPushMatrix();
     
@@ -410,12 +405,10 @@ function draw() {
   document.onkeydown = handleKeyDown;
   document.onkeyup = handleKeyUp;
 
+  console.log(eyePt);
+
   // We want to look down -z, so create a lookat point in that direction   
   vec3.add(viewPt, eyePt, viewDir);
-    
-  // quaternion approach for the plane
-  // var qPitch = quat.create();
-  // quat.setAxisAngle(qPitch, xAxis, );
 
   // Then generate the lookat matrix and initialize the MV matrix to that view
   mat4.lookAt(mvMatrix,eyePt,viewPt,up);
@@ -446,13 +439,13 @@ function tick() {
       lightPosition[0] += 0.15;
     }
     else if (lightPosition[0] < 20 && lightPosition[0] >= -20) {
-      lightPosition[0] += 0.025;
+      lightPosition[0] += 0.035;
     }
-    else if (lightPosition[0] >= 20 && lightPosition[0] < 100) {
+    else if (lightPosition[0] >= 20 && lightPosition[0] < 50) {
       lightPosition[0] += 0.15;
     }
-    else if (lightPosition[0] >= 100) {
-      lightPosition[0] = -100;
+    else if (lightPosition[0] >= 50) {
+      lightPosition[0] = -50;
     }
     
     animate();
@@ -466,7 +459,7 @@ function animate() {
     quat.setAxisAngle(tempRot, xAxis, 0.01);
     quat.mul(currRot, tempRot, currRot);
   }
-  else if (currentlyPressedKeys["s"]) {
+  if (currentlyPressedKeys["s"]) {
     quat.setAxisAngle(tempRot, xAxis, -0.01);
     quat.mul(currRot, tempRot, currRot);
   }
@@ -474,7 +467,7 @@ function animate() {
     quat.setAxisAngle(tempRot, zAxis, -0.01);
     quat.mul(currRot, tempRot, currRot);
   }
-  else if (currentlyPressedKeys["d"]) {
+  if (currentlyPressedKeys["d"]) {
     quat.setAxisAngle(tempRot, zAxis, 0.01);
     quat.mul(currRot, tempRot, currRot);
   }
@@ -482,23 +475,35 @@ function animate() {
     quat.setAxisAngle(tempRot, yAxis, -0.0025);
     quat.mul(currRot, tempRot, currRot);
   }
-  else if (currentlyPressedKeys["c"]) {
+  if (currentlyPressedKeys["c"]) {
     quat.setAxisAngle(tempRot, yAxis, 0.0025);
     quat.mul(currRot, tempRot, currRot);
   }
 
   if (currentlyPressedKeys["-"]) {
-    speedfactor -= 0.1;
+    speed -= 0.001;
+    if (speed < 0.001) {
+      speed = 0.001;
+    }
   }
-  if (currentlyPressedKeys["+"]) {
-    speedfactor += 0.1;
+  if (currentlyPressedKeys["="]) {
+    speed += 0.001;
+    if (speed > 0.01) {
+      speed = 0.02;
+    }
   }
+
+  // eyePt[0] = mvMatrix[12];
+  // eyePt[1] = mvMatrix[13];
+  // eyePt[2] = mvMatrix[14];
+  
+  // mat4.translate(mvMatrix, mvMatrix, eyePt);
   // console.log(mvMatrix);
   // console.log(mvMatrix[2]);
   // console.log(mvMatrix[6]);
   // console.log(mvMatrix[10]);
-  var john = vec3.fromValues(mvMatrix[2], mvMatrix[6], mvMatrix[10]);
-  mat4.translate(mvMatrix, mvMatrix, vec3.fromValues(1, 2, 3));
+  // var john = vec3.fromValues(mvMatrix[8], mvMatrix[9], mvMatrix[10]);
+  // mat4.translate(mvMatrix, mvMatrix, john);
 }
 
 /**

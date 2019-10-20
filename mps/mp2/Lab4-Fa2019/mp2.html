@@ -167,6 +167,16 @@
 <script src="Terrain.js"></script>  
 <script src="mp2.js"></script>   
 <body onload="startup();">
+    <fieldset>
+      <legend>CS 418 Fall 2019 MP2 - Nikhil Simha</legend>
+      Controls:<br>
+      "W"/"S" - Pitch<br>
+      "A"/"D" - Roll<br>
+      "Z"/"C" - Yaw (experimental)<br>
+      "-"/"=" - Throttle<br>
+      Sudden change in lighting is due to day/night cycle (experimental)<br>
+      Options below. Refresh to generate new terrain!
+    </fieldset>
  <canvas id="myGLCanvas" width="800" height="800"></canvas>
      <form id="input_form">
         <input type="radio" name="primitive" id="fog" value="fog" checked> Fog On 
@@ -179,6 +189,7 @@
          <input type="radio" name="primitive" id="polygon" id="polygon" value="polygon" checked> Polygon
          <input type="radio" name="primitive" id="wirepoly" value="wirepoly" > Polygon with Edges  
         </fieldset>
+        Controls above!
      </form>
 </body>
 
