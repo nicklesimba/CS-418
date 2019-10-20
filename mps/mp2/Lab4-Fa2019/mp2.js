@@ -40,7 +40,7 @@ var myTerrain;
 
 // View parameters
 /** @global Location of the camera in world coordinates */
-var eyePt = vec3.fromValues(0.0,0.0,0.0);
+var eyePt = vec3.fromValues(0.0,0.3,-0.5);
 /** @global Direction of the view in world coordinates */
 var viewDir = vec3.fromValues(0.0,0.0,-1.0);
 /** @global Up vector for view matrix creation, in world coordinates */
@@ -52,12 +52,12 @@ var origPt = vec3.fromValues(0.0,0.0,0.0);
 
 //Light parameters
 /** @global Light position in VIEW coordinates */
-var lightPosition = [20, 20, -15];
+var lightPosition = [-20, 20, -5];
 // var lightPosition = [0.5,0.5,0.0];
 /** @global Ambient light color/intensity for Phong reflection */
 var lAmbient = [0.1,0.1,0.1];
 /** @global Diffuse light color/intensity for Phong reflection */
-var lDiffuse = [1,1,1];
+var lDiffuse = [0.5,0.5,0.5];
 /** @global Specular light color/intensity for Phong reflection */
 var lSpecular =[0.4,0.4,0.4];
 
@@ -76,6 +76,8 @@ var kEdgeBlack = [0.0,0.0,0.0];
 /** @global Edge color for wireframe rendering */
 var kEdgeWhite = [1.0,1.0,1.0];
 
+/** @global An object holding the geometry for a 3D terrain */
+var myQuaternion = quat.create();
 
 
 //-------------------------------------------------------------------------
@@ -249,7 +251,8 @@ function setupShaders() {
   shaderProgram.uniformAmbientLightColorLoc = gl.getUniformLocation(shaderProgram, "uAmbientLightColor");  
   shaderProgram.uniformDiffuseLightColorLoc = gl.getUniformLocation(shaderProgram, "uDiffuseLightColor");
   shaderProgram.uniformSpecularLightColorLoc = gl.getUniformLocation(shaderProgram, "uSpecularLightColor");
-  shaderProgram.uniformShininessLoc = gl.getUniformLocation(shaderProgram, "uShininess");    
+  shaderProgram.uniformShininessLoc = gl.getUniformLocation(shaderProgram, "uShininess");
+  shaderProgram.uniformFogDensity = gl.getUniformLocation(shaderProgram, "fogDensity");
   shaderProgram.uniformAmbientMaterialColorLoc = gl.getUniformLocation(shaderProgram, "uKAmbient");  
   shaderProgram.uniformDiffuseMaterialColorLoc = gl.getUniformLocation(shaderProgram, "uKDiffuse");
   shaderProgram.uniformSpecularMaterialColorLoc = gl.getUniformLocation(shaderProgram, "uKSpecular");
@@ -290,23 +293,35 @@ function setLightUniforms(loc,a,d,s) {
  * Populate buffers with data
  */
 function setupBuffers() {
-    myTerrain = new Terrain(64,-0.5,0.5,-0.5,0.5);
+    myTerrain = new Terrain(128,-2.0,2.0,-2.0,2.0);
     myTerrain.loadBuffers();
 }
+
+/**
+void CameraFPSQuaternion::UpdateView()
+{
+  //FPS camera:  RotationX(pitch) * RotationY(yaw)
+  glm::quat qPitch = glm::angleAxis(pitch, glm::vec3(1, 0, 0));
+  glm::quat qYaw = glm::angleAxis(yaw, glm::vec3(0, 1, 0));
+  glm::quat qRoll = glm::angleAxis(roll,glm::vec3(0,0,1));  
+ 
+  //For a FPS camera we can omit roll
+  glm::quat orientation = qPitch * qYaw;
+  orientation = glm::normalize(orientation);
+  glm::mat4 rotate = glm::mat4_cast(orientation);
+ 
+  glm::mat4 translate = glm::mat4(1.0f);
+  translate = glm::translate(translate, -eye);
+ 
+  viewMatrix = rotate * translate;
+}
+ */
 
 //----------------------------------------------------------------------------------
 /**
  * Draw call that applies matrix transformations to model and draws model in frame
  */
 function draw() { 
-    //console.log("function draw()")
-    // if (lightPosition[0] < 1) {
-    //   lightPosition[0] += 0.005;
-    // }
-    // if (lightPosition[0] >= 1) {
-    //   lightPosition[0] = 0.0;
-    // }
-    // console.log(lightPosition);
 
     var transformVec = vec3.create();
   
@@ -320,7 +335,7 @@ function draw() {
 
     // We want to look down -z, so create a lookat point in that direction   
     vec3.add(viewPt, eyePt, viewDir);
-    // vec3.rotateX(viewPt, viewPt, origPt, Math.Pi/5);
+    
     // Then generate the lookat matrix and initialize the MV matrix to that view
     mat4.lookAt(mvMatrix,eyePt,viewPt,up);    
  
@@ -350,6 +365,16 @@ function draw() {
       setMaterialUniforms(shininess,kAmbient,kEdgeWhite,kSpecular);
       myTerrain.drawEdges();
     }
+
+    if(document.getElementById("fog").checked) 
+    {
+      gl.uniform1f(shaderProgram.uniformFogDensity, 0.5);
+    }
+
+    if(document.getElementById("nofog").checked) 
+    {
+      gl.uniform1f(shaderProgram.uniformFogDensity, 0.0);
+    }
     mvPopMatrix();
 
   
@@ -364,8 +389,10 @@ function draw() {
   gl = createGLContext(canvas);
   setupShaders();
   setupBuffers();
-  gl.clearColor(0.0, 0.0, 0.0, 1.0);
+  gl.clearColor(0.4, 0.4, 0.4, 0.6);
   gl.enable(gl.DEPTH_TEST);
+  document.onkeydown = handleKeyDown;
+  document.onkeyup = handleKeyUp;
   tick();
 }
 
@@ -376,5 +403,89 @@ function draw() {
 function tick() {
     requestAnimFrame(tick);
     draw();
+    
+    // Sun movement :)
+    if (lightPosition[0] < -20) {
+      lightPosition[0] += 0.15;
+    }
+    else if (lightPosition[0] < 20 && lightPosition[0] >= -20) {
+      lightPosition[0] += 0.05;
+    }
+    else if (lightPosition[0] >= 20 && lightPosition[0] < 100) {
+      lightPosition[0] += 0.15;
+    }
+    else if (lightPosition[0] >= 100) {
+      lightPosition[0] = -100;
+    }
+    
+    // uncomment this later! This is the plane's thrust! it should not be "eyePt[2]" but rather move eye point in direction of current viewDir
+    // eyePt[2] -= 0.0015;
+    animate();
+    console.log(eyePt);
 }
 
+/**
+ * Code for updating model transforms
+ */
+function animate() {
+  if (currentlyPressedKeys["a"]) {
+    eulerY -= 1;
+  }
+  if (currentlyPressedKeys["d"]) {
+    eulerY += 1;
+  }
+
+  // temporary! should work automatically
+  if (currentlyPressedKeys["o"]) {
+    eyePt[2] -= 0.0015;
+  }
+  if (currentlyPressedKeys["l"]) {
+    eyePt[2] += 0.0015;
+  }
+  // if (currentlyPressedKeys["-"]) {
+    
+  // }
+  // if (currentlyPressedKeys["="]) {
+    
+  // }
+
+}
+
+/**
+ * Code to handle user interaction 
+ */ 
+var currentlyPressedKeys = {};
+
+
+function handleKeyDown(event) {
+  console.log("Key down ", event.key, " code ", event.code);
+  if (event.key == "a" || event.key == "d" || event.key == "w" || event.key == "s" || 
+  event.key == "-" || event.key == "=") {
+    event.preventDefault();
+  }
+  currentlyPressedKeys[event.key] = true;
+}
+
+function handleKeyUp(event) {
+  console.log("Key up ", event.key, " code ", event.code);
+  currentlyPressedKeys[event.key] = false;
+}
+
+// function stolen from updated glMatrix because i'm too lazy to update!
+function fromEuler(out, x, y, z) {
+  let halfToRad = 0.5 * Math.PI / 180.0;
+  x *= halfToRad;
+  y *= halfToRad;
+  z *= halfToRad;
+  let sx = Math.sin(x);
+  let cx = Math.cos(x);
+  let sy = Math.sin(y);
+  let cy = Math.cos(y);
+  let sz = Math.sin(z);
+  let cz = Math.cos(z);
+  out[0] = sx * cy * cz - cx * sy * sz;
+  out[1] = cx * sy * cz + sx * cy * sz;
+  out[2] = cx * cy * sz - sx * sy * cz;
+  out[3] = cx * cy * cz + sx * sy * sz;
+  return out;
+}
