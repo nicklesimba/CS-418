@@ -355,9 +355,13 @@ function draw() {
 
 
     mvPushMatrix();
+
+    var lightPositionInViewCoordinates = vec3.create();
+    inverted = quat.create();
+    vec3.transformQuat(lightPositionInViewCoordinates, lightPosition, currRot);
     
     setMatrixUniforms();
-    setLightUniforms(lightPosition,lAmbient,lDiffuse,lSpecular);
+    setLightUniforms(lightPositionInViewCoordinates,lAmbient,lDiffuse,lSpecular);
     
     if ((document.getElementById("polygon").checked) || (document.getElementById("wirepoly").checked))
     { 
