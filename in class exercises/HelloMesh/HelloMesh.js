@@ -1,6 +1,6 @@
 
 /**
- * @file A simple WebGL example drawing central Illinois style terrain
+ * @file A simple WebGL example for viewing meshes read from OBJ files
  * @author Eric Shaffer <shaffer1@illinois.edu>  
  */
 
@@ -16,6 +16,9 @@ var shaderProgram;
 /** @global The Modelview matrix */
 var mvMatrix = mat4.create();
 
+/** @global The View matrix */
+var vMatrix = mat4.create();
+
 /** @global The Projection matrix */
 var pMatrix = mat4.create();
 
@@ -25,79 +28,64 @@ var nMatrix = mat3.create();
 /** @global The matrix stack for hierarchical modeling */
 var mvMatrixStack = [];
 
-/** @global The angle of rotation around the y axis */
-var viewRot = 10;
-
-/** @global A glmatrix vector to use for transformations */
-var transformVec = vec3.create();    
-
-// Initialize the vector....
-vec3.set(transformVec,0.0,0.0,-2.0);
-
-/** @global An object holding the geometry for a 3D terrain */
-var myTerrain;
+/** @global An object holding the geometry for a 3D mesh */
+var myMesh;
 
 
 // View parameters
 /** @global Location of the camera in world coordinates */
-var eyePt = vec3.fromValues(0.0,0.5,-0.5);
+var eyePt = vec3.fromValues(0.0,0.0,2.0);
 /** @global Direction of the view in world coordinates */
 var viewDir = vec3.fromValues(0.0,0.0,-1.0);
 /** @global Up vector for view matrix creation, in world coordinates */
 var up = vec3.fromValues(0.0,1.0,0.0);
 /** @global Location of a point along viewDir in world coordinates */
 var viewPt = vec3.fromValues(0.0,0.0,0.0);
-/** @global Location of origin */
-var origPt = vec3.fromValues(0.0,0.0,0.0);
 
 //Light parameters
 /** @global Light position in VIEW coordinates */
-var lightPosition = [-20, 20, -5];
-// var lightPosition = [0.5,0.5,0.0];
+var lightPosition = [0,5,5];
 /** @global Ambient light color/intensity for Phong reflection */
-var lAmbient = [0.4,0.4,0.4];
+var lAmbient = [0,0,0];
 /** @global Diffuse light color/intensity for Phong reflection */
 var lDiffuse = [1,1,1];
 /** @global Specular light color/intensity for Phong reflection */
-var lSpecular =[0.5,0.5,0.5];
+var lSpecular =[0,0,0];
 
 //Material parameters
 /** @global Ambient material color/intensity for Phong reflection */
 var kAmbient = [1.0,1.0,1.0];
 /** @global Diffuse material color/intensity for Phong reflection */
 var kTerrainDiffuse = [205.0/255.0,163.0/255.0,63.0/255.0];
-// var kTerrainDiffuse = [0.0/255.0,163.0/255.0,63.0/255.0];
 /** @global Specular material color/intensity for Phong reflection */
-var kSpecular = [1,1,1];
+var kSpecular = [0.0,0.0,0.0];
 /** @global Shininess exponent for Phong reflection */
-var shininess = 30;
+var shininess = 23;
 /** @global Edge color fpr wireframeish rendering */
 var kEdgeBlack = [0.0,0.0,0.0];
 /** @global Edge color for wireframe rendering */
 var kEdgeWhite = [1.0,1.0,1.0];
 
-/** @global X, Y, and Z euler angles (initially) */
-// var xRot = [0, 0, 0];
-// var yRot = [0, 0, 0];
-// var zRot = [0, 0, 0];
-var xRot = 0;
-var yRot = 0;
-var zRot = 0;
 
-/** @global X, Y, and Z axes variables (unused) */
-var xAxis = [1, 0, 0];
-var yAxis = [0, 1, 0];
-var zAxis = [0, 0, 1];
+//Model parameters
+var eulerY=0;
 
-/** @global quaternion that records current orientation of viewer */
-var currRot = quat.create();
-
-/** @global quaternion that records contributions from keyboard inputs */
-var tempRot = quat.create();
-
-/** @global plane throttle */
-var speed = 0.001;
-var move = 0.0;
+//-------------------------------------------------------------------------
+/**
+ * Asynchronously read a server-side text file
+ */
+function asyncGetFile(url) {
+  //Your code here
+  console.log("Getting text file");
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open("GET", url);
+    xhr.onload = () => resolve(xhr.responseText);
+    xhr.onerror = () => reject(xhr.statusText);
+    xhr.send();
+    console.log("Made promise");
+  });
+}
 
 //-------------------------------------------------------------------------
 /**
@@ -270,8 +258,7 @@ function setupShaders() {
   shaderProgram.uniformAmbientLightColorLoc = gl.getUniformLocation(shaderProgram, "uAmbientLightColor");  
   shaderProgram.uniformDiffuseLightColorLoc = gl.getUniformLocation(shaderProgram, "uDiffuseLightColor");
   shaderProgram.uniformSpecularLightColorLoc = gl.getUniformLocation(shaderProgram, "uSpecularLightColor");
-  shaderProgram.uniformShininessLoc = gl.getUniformLocation(shaderProgram, "uShininess");
-  shaderProgram.uniformFogDensity = gl.getUniformLocation(shaderProgram, "fogDensity");
+  shaderProgram.uniformShininessLoc = gl.getUniformLocation(shaderProgram, "uShininess");    
   shaderProgram.uniformAmbientMaterialColorLoc = gl.getUniformLocation(shaderProgram, "uKAmbient");  
   shaderProgram.uniformDiffuseMaterialColorLoc = gl.getUniformLocation(shaderProgram, "uKDiffuse");
   shaderProgram.uniformSpecularMaterialColorLoc = gl.getUniformLocation(shaderProgram, "uKSpecular");
@@ -311,9 +298,20 @@ function setLightUniforms(loc,a,d,s) {
 /**
  * Populate buffers with data
  */
-function setupBuffers() {
-    myTerrain = new Terrain(256,-4.0,4.0,-4.0,4.0);
-    myTerrain.loadBuffers();
+function setupMesh(filename) {
+   //Your code here
+   myMesh = new TriMesh();
+   myPromise = asyncGetFile(filename);
+   // We define what to do when the premise is resolved with the then() call,
+   // and what to do when the promise is rejected with the catch() call.
+   myPromise.then((retrievedText) => {
+      myMesh.loadFromOBJ(retrievedText);
+      console.log("Yay! got the file");
+   })
+   .catch(
+      (reason) => {
+          console.log("handle rejected promise (" + reason + ") here.");
+      });
 }
 
 //----------------------------------------------------------------------------------
@@ -321,9 +319,7 @@ function setupBuffers() {
  * Draw call that applies matrix transformations to model and draws model in frame
  */
 function draw() { 
-
-    var transformVec = vec3.create();
-
+    //console.log("function draw()")
   
     gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
@@ -331,68 +327,78 @@ function draw() {
     // We'll use perspective 
     mat4.perspective(pMatrix,degToRad(45), 
                      gl.viewportWidth / gl.viewportHeight,
-                     0.5, 200.0);
+                     0.1, 500.0);
 
-    mat4.fromQuat(mvMatrix, currRot);
+    // We want to look down -z, so create a lookat point in that direction    
+    vec3.add(viewPt, eyePt, viewDir);
     
-    vec3.set(transformVec,0.0,-0.25,-2.0);
+    // Then generate the lookat matrix and initialize the view matrix to that view
+    mat4.lookAt(vMatrix,eyePt,viewPt,up);
+    
+    //Draw Mesh
+    //ADD an if statement to prevent early drawing of myMesh
+    if (myMesh.loaded() == true) {
+        mvPushMatrix();
+        mat4.rotateY(mvMatrix, mvMatrix, degToRad(eulerY));
+        mat4.multiply(mvMatrix,vMatrix,mvMatrix);
+        setMatrixUniforms();
+        setLightUniforms(lightPosition,lAmbient,lDiffuse,lSpecular);
+    
+        if ((document.getElementById("polygon").checked) || (document.getElementById("wirepoly").checked))
+        {
+            setMaterialUniforms(shininess,kAmbient,
+                                kTerrainDiffuse,kSpecular); 
+            myMesh.drawTriangles();
+        }
+    
+        if(document.getElementById("wirepoly").checked)
+        {   
+            setMaterialUniforms(shininess,kAmbient,
+                                kEdgeBlack,kSpecular);
+            myMesh.drawEdges();
+        }   
 
-    mat4.translate(mvMatrix, mvMatrix,transformVec); // commenting this out moves us away from the model
-    
-    move += speed;
-    
-    console.log(move);
-
-    var viewDir = vec3.fromValues(0,0,move);
-    var inverted = quat.create();
-    vec3.transformQuat(viewDir, viewDir, quat.invert(inverted, currRot));
-    console.log(viewDir);
-    // vec3.multiply(viewDir, viewDir, [speed, speed, speed]);
-    mat4.translate(mvMatrix, mvMatrix,viewDir);
-    
-    mat4.rotateY(mvMatrix, mvMatrix, degToRad(viewRot));
-    mat4.rotateX(mvMatrix, mvMatrix, degToRad(-75)); // commenting this out gives us a top down view
-
-
-    mvPushMatrix();
-
-    var lightPositionInViewCoordinates = vec3.create();
-    inverted = quat.create();
-    vec3.transformQuat(lightPositionInViewCoordinates, lightPosition, currRot);
-    
-    setMatrixUniforms();
-    setLightUniforms(lightPositionInViewCoordinates,lAmbient,lDiffuse,lSpecular);
-    
-    if ((document.getElementById("polygon").checked) || (document.getElementById("wirepoly").checked))
-    { 
-      setMaterialUniforms(shininess,kAmbient,kTerrainDiffuse,kSpecular); 
-      myTerrain.drawTriangles();
+        if(document.getElementById("wireframe").checked)
+        {
+            setMaterialUniforms(shininess,kAmbient,
+                                kEdgeWhite,kSpecular);
+            myMesh.drawEdges();
+        }   
+        mvPopMatrix();
     }
-    
-    if(document.getElementById("wirepoly").checked)
-    {
-      setMaterialUniforms(shininess,kAmbient,kEdgeBlack,kSpecular);
-      myTerrain.drawEdges();
-    }
-
-    if(document.getElementById("wireframe").checked)
-    {
-      setMaterialUniforms(shininess,kAmbient,kEdgeWhite,kSpecular);
-      myTerrain.drawEdges();
-    }
-
-    if(document.getElementById("fog").checked) 
-    {
-      gl.uniform1f(shaderProgram.uniformFogDensity, 0.5);
-    }
-
-    if(document.getElementById("nofog").checked) 
-    {
-      gl.uniform1f(shaderProgram.uniformFogDensity, 0.0);
-    }
-    mvPopMatrix();
-
   
+}
+
+//----------------------------------------------------------------------------------
+//Code to handle user interaction
+var currentlyPressedKeys = {};
+
+function handleKeyDown(event) {
+        //console.log("Key down ", event.key, " code ", event.code);
+        currentlyPressedKeys[event.key] = true;
+          if (currentlyPressedKeys["a"]) {
+            // key A
+            eulerY-= 1;
+        } else if (currentlyPressedKeys["d"]) {
+            // key D
+            eulerY+= 1;
+        } 
+    
+        if (currentlyPressedKeys["ArrowUp"]){
+            // Up cursor key
+            event.preventDefault();
+            eyePt[2]+= 0.01;
+        } else if (currentlyPressedKeys["ArrowDown"]){
+            event.preventDefault();
+            // Down cursor key
+            eyePt[2]-= 0.01;
+        } 
+    
+}
+
+function handleKeyUp(event) {
+        //console.log("Key up ", event.key, " code ", event.code);
+        currentlyPressedKeys[event.key] = false;
 }
 
 //----------------------------------------------------------------------------------
@@ -403,32 +409,25 @@ function draw() {
   canvas = document.getElementById("myGLCanvas");
   gl = createGLContext(canvas);
   setupShaders();
-  setupBuffers();
-  gl.clearColor(0.4, 0.4, 0.4, 0.6);
+  setupMesh("pot.obj");
+  gl.clearColor(0.0, 0.0, 0.0, 1.0);
   gl.enable(gl.DEPTH_TEST);
   document.onkeydown = handleKeyDown;
   document.onkeyup = handleKeyUp;
-
-  console.log(eyePt);
-
-  // We want to look down -z, so create a lookat point in that direction   
-  vec3.add(viewPt, eyePt, viewDir);
-
-  // Then generate the lookat matrix and initialize the MV matrix to that view
-  mat4.lookAt(mvMatrix,eyePt,viewPt,up);
-
-  //Draw Terrain
-  var transformVec = vec3.create();
-  vec3.set(transformVec,0.0,-0.25,-2.0);
-  mat4.translate(mvMatrix, mvMatrix, transformVec); // commenting this out moves us away from the model
-  mat4.rotateY(mvMatrix, mvMatrix, degToRad(viewRot));
-  mat4.rotateX(mvMatrix, mvMatrix, degToRad(-75)); // commenting this out gives us a top down view
-  mvPushMatrix();
-
-  fromEuler(currRot, xRot, yRot, zRot);
-
   tick();
 }
+
+
+//----------------------------------------------------------------------------------
+/**
+  * Update any model transformations
+  */
+function animate() {
+   //console.log(eulerX, " ", eulerY, " ", eulerZ); 
+   document.getElementById("eY").value=eulerY;
+   document.getElementById("eZ").value=eyePt[2];   
+}
+
 
 //----------------------------------------------------------------------------------
 /**
@@ -436,115 +435,7 @@ function draw() {
  */
 function tick() {
     requestAnimFrame(tick);
-    draw();
-    
-    // Sun movement :)
-    if (lightPosition[0] < -20) {
-      lightPosition[0] += 0.15;
-    }
-    else if (lightPosition[0] < 20 && lightPosition[0] >= -20) {
-      lightPosition[0] += 0.035;
-    }
-    else if (lightPosition[0] >= 20 && lightPosition[0] < 50) {
-      lightPosition[0] += 0.15;
-    }
-    else if (lightPosition[0] >= 50) {
-      lightPosition[0] = -50;
-    }
-    
     animate();
+    draw();
 }
 
-/**
- * Code for updating model transforms
- */
-function animate() {
-  if (currentlyPressedKeys["w"]) {
-    quat.setAxisAngle(tempRot, xAxis, 0.01);
-    quat.mul(currRot, tempRot, currRot);
-  }
-  if (currentlyPressedKeys["s"]) {
-    quat.setAxisAngle(tempRot, xAxis, -0.01);
-    quat.mul(currRot, tempRot, currRot);
-  }
-  if (currentlyPressedKeys["a"]) {
-    quat.setAxisAngle(tempRot, zAxis, -0.01);
-    quat.mul(currRot, tempRot, currRot);
-  }
-  if (currentlyPressedKeys["d"]) {
-    quat.setAxisAngle(tempRot, zAxis, 0.01);
-    quat.mul(currRot, tempRot, currRot);
-  }
-  if (currentlyPressedKeys["z"]) {
-    quat.setAxisAngle(tempRot, yAxis, -0.0025);
-    quat.mul(currRot, tempRot, currRot);
-  }
-  if (currentlyPressedKeys["c"]) {
-    quat.setAxisAngle(tempRot, yAxis, 0.0025);
-    quat.mul(currRot, tempRot, currRot);
-  }
-
-  if (currentlyPressedKeys["-"]) {
-    speed -= 0.001;
-    if (speed < 0.001) {
-      speed = 0.001;
-    }
-  }
-  if (currentlyPressedKeys["="]) {
-    speed += 0.001;
-    if (speed > 0.01) {
-      speed = 0.02;
-    }
-  }
-
-  // eyePt[0] = mvMatrix[12];
-  // eyePt[1] = mvMatrix[13];
-  // eyePt[2] = mvMatrix[14];
-  
-  // mat4.translate(mvMatrix, mvMatrix, eyePt);
-  // console.log(mvMatrix);
-  // console.log(mvMatrix[2]);
-  // console.log(mvMatrix[6]);
-  // console.log(mvMatrix[10]);
-  // var john = vec3.fromValues(mvMatrix[8], mvMatrix[9], mvMatrix[10]);
-  // mat4.translate(mvMatrix, mvMatrix, john);
-}
-
-/**
- * Code to handle user interaction 
- */ 
-var currentlyPressedKeys = {};
-
-
-function handleKeyDown(event) {
-  console.log("Key down ", event.key, " code ", event.code);
-  if (event.key == "a" || event.key == "d" || event.key == "w" || event.key == "s" || 
-  event.key == "-" || event.key == "=") {
-    event.preventDefault();
-  }
-  currentlyPressedKeys[event.key] = true;
-}
-
-function handleKeyUp(event) {
-  console.log("Key up ", event.key, " code ", event.code);
-  currentlyPressedKeys[event.key] = false;
-}
-
-// function stolen from updated glMatrix because i'm too lazy to update!
-function fromEuler(out, x, y, z) {
-  let halfToRad = 0.5 * Math.PI / 180.0;
-  x *= halfToRad;
-  y *= halfToRad;
-  z *= halfToRad;
-  let sx = Math.sin(x);
-  let cx = Math.cos(x);
-  let sy = Math.sin(y);
-  let cy = Math.cos(y);
-  let sz = Math.sin(z);
-  let cz = Math.cos(z);
-  out[0] = sx * cy * cz - cx * sy * sz;
-  out[1] = cx * sy * cz + sx * cy * sz;
-  out[2] = cx * cy * sz - sx * sy * cz;
-  out[3] = cx * cy * cz + sx * sy * sz;
-  return out;
-}

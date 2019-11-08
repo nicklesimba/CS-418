@@ -1,8 +1,9 @@
 <!DOCTYPE HTML> 
 <html lang="en"> 
 <head>
-<title>Hello Terrain </title>
+<title>Hello Mesh </title>
 <meta charset="utf-8"> 
+<link rel="shortcut icon" href="#" />
 </head>
 
     
@@ -33,7 +34,8 @@
     vec3 vertexPositionEye3 = vertexPositionEye4.xyz / vertexPositionEye4.w;
   
     // Calculate the vector (l) to the light source
-    vec3 vectorToLightSource = normalize(uLightPosition - vertexPositionEye3);
+    vec3 lightEye=(vec4(uLightPosition,1)).xyz;
+    vec3 vectorToLightSource = normalize(lightEye - vertexPositionEye3);
     
     // Transform the normal (n) to eye coordinates
     vec3 normalEye = normalize(uNMatrix * aVertexNormal);
@@ -60,7 +62,9 @@
     vColor = vec4(((uAmbientLightColor*uKAmbient)
                 + (uDiffuseLightColor*uKDiffuse) * diffuseLightWeightning
                 + ((uSpecularLightColor*uKSpecular) * specularLightWeightning)),1.0);
+                
     gl_Position = uPMatrix*uMVMatrix*vec4(aVertexPosition, 1.0);
+    //vColor=vec4(normalEye,1);
     }
 </script>
   
@@ -74,8 +78,8 @@ void main(void) {
 
 <script src="gl-matrix-min.js"></script> 
 <script src="webgl-utils.js"></script> 
-<script src="Terrain.js"></script>  
-<script src="HelloTerrain.js"></script>   
+<script src="TriMesh.js"></script>  
+<script src="HelloMesh.js"></script>   
 <body onload="startup();">
  <canvas id="myGLCanvas" width="800" height="800"></canvas>
     <form id="input_form">
@@ -84,6 +88,11 @@ void main(void) {
          <input type="radio" name="primitive" id="wireframe" value="wireframe"> Wireframe
          <input type="radio" name="primitive" id="polygon" id="polygon" value="polygon" checked> Polygon
          <input type="radio" name="primitive" id="wirepoly" value="wirepoly" > Polygon with Edges  
+        </fieldset>
+        <fieldset>
+            <legend>Mesh Pose and Camera Position</legend>
+         <emph>Euler Y:</emph> <input type="number" id="eY" value="0"> Keys A and D <br><br>
+         <emph>Eye Z position:</emph> <input type="number" id="eZ" value="0" > Keys ArrowUp and ArrowDown   
         </fieldset>
         </form>
 </body>
