@@ -1,5 +1,18 @@
+<!-- Licensed under a BSD license. See license.html for license -->
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+<title>WebGL - Textures - Environment Map</title>
+<link type="text/css" href="mp3.css" rel="stylesheet" />
+</head>
+<body onload="startup();"> 
+<div class="description">
+Textured Cube using a environment emap. <br/>
+</div>
 <canvas id="canvas"></canvas>
-
+</body>
 <!-- vertex shader -->
 <script id="3d-vertex-shader" type="x-shader/x-vertex">
 attribute vec4 a_position;
@@ -42,15 +55,22 @@ void main() {
   vec3 eyeToSurfaceDir = normalize(v_worldPosition - u_worldCameraPosition);
   vec3 direction = reflect(eyeToSurfaceDir,worldNormal);
 
+  vec3 ocean;
+  ocean.x = 0.0;
+  ocean.y = 0.35;
+  ocean.z = 0.35;
+  
+  // gl_FragColor = vec4(ocean, 1.0);
   gl_FragColor = textureCube(u_texture, direction);
 }
-</script><!--
+</script>
+<!--
 for most samples webgl-utils only provides shader compiling/linking and
 canvas resizing because why clutter the examples with code that's the same in every sample.
 See http://webglfundamentals.org/webgl/lessons/webgl-boilerplate.html
 and http://webglfundamentals.org/webgl/lessons/webgl-resizing-the-canvas.html
 for webgl-utils, m3, m4, and webgl-lessons-ui.
 -->
-<script src="gl-matrix-min.js"></script> 
-<script src="https://webglfundamentals.org/webgl/resources/webgl-utils.js"></script>
+<script src="webgl-utils.js"></script>
+<script src="m4.js"></script>
 <script src="mp3.js"></script>

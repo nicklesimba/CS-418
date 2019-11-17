@@ -1,6 +1,6 @@
 "use strict";
 
-function startup() {
+function main() {
   // Get A WebGL context
   /** @type {HTMLCanvasElement} */
   var canvas = document.getElementById("canvas");
@@ -11,9 +11,6 @@ function startup() {
 
   // setup GLSL program
   var program = webglUtils.createProgramFromScripts(gl, ["3d-vertex-shader", "3d-fragment-shader"]);
-
-  // gl.clearColor(0.0, 0.0, 0.0, 1.0);
-  // gl.enable(gl.DEPTH_TEST);
 
   // look up where the vertex data needs to go.
   var positionLocation = gl.getAttribLocation(program, "a_position");
@@ -92,7 +89,6 @@ function startup() {
 
     // Asynchronously load an image
     const image = new Image();
-    image.crossOrigin = "anonymous";
     image.src = url;
     image.addEventListener('load', function() {
       // Now that the image has loaded make copy it to the texture.
@@ -182,28 +178,20 @@ function startup() {
 
     // Compute the projection matrix
     var aspect = gl.canvas.clientWidth / gl.canvas.clientHeight;
-    // var projectionMatrix = mat4.create();
-    // mat4.perspective(projectionMatrix, fieldOfViewRadians, aspect, 1, 2000);
-    var projectionMatrix = m4.perspective(fieldOfViewRadians, aspect, 1, 2000);
+    var projectionMatrix =
+        m4.perspective(fieldOfViewRadians, aspect, 1, 2000);
     gl.uniformMatrix4fv(projectionLocation, false, projectionMatrix);
 
     var cameraPosition = [0, 0, 2];
     var target = [0, 0, 0];
     var up = [0, 1, 0];
     // Compute the camera's matrix using look at.
-    // var cameraMatrix = mat4.create();
-    // mat4.lookAt(cameraMatrix, cameraPosition, target, up);
     var cameraMatrix = m4.lookAt(cameraPosition, target, up);
 
     // Make a view matrix from the camera matrix.
-    // var viewMatrix = mat4.create();
-    // mat4.invert(cameraMatrix, cameraMatrix);
     var viewMatrix = m4.inverse(cameraMatrix);
 
-    // var worldMatrix = mat4.create();
-    // mat4.rotateX(worldMatrix, worldMatrix, modelXRotationRadians);
     var worldMatrix = m4.xRotation(modelXRotationRadians);
-    // mat4.rotateY(worldMatrix, worldMatrix, modelYRotationRadians);
     worldMatrix = m4.yRotate(worldMatrix, modelYRotationRadians);
 
     // Set the uniforms
@@ -320,3 +308,5 @@ function setNormals(gl) {
     ]);
   gl.bufferData(gl.ARRAY_BUFFER, normals, gl.STATIC_DRAW);
 }
+
+main();

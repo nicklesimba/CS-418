@@ -1,0 +1,95 @@
+<!-- Licensed under a BSD license. See license.html for license -->
+<!DOCTYPE html>
+<html>
+
+<!-- *** Teapot Shader Section - includes shading, reflection, and refraction *** -->
+<script id="envmap-vertex-shader" type="x-shader/x-vertex">
+// Per vertex information
+attribute vec4 a_position;
+attribute vec3 a_normal;
+
+uniform mat4 u_projection;
+uniform mat4 u_view;
+uniform mat4 u_world;
+
+varying vec3 v_worldPosition;
+varying vec3 v_worldNormal;
+
+void main() {
+  // Calculate position
+  gl_Position = u_projection * u_view * u_world * a_position;
+
+  v_worldPosition = (u_world * a_position).xyz;
+
+  // Orient normal vectors correctly
+  v_worldNormal = mat3(u_world) * a_normal;
+}
+</script>
+<!-- fragment shader -->
+<script id="envmap-fragment-shader" type="x-shader/x-fragment">
+precision mediump float;
+
+varying vec3 v_worldPosition;
+varying vec3 v_worldNormal;
+
+uniform samplerCube u_texture;
+
+uniform vec3 u_worldCameraPosition;
+
+void main() {
+  vec3 worldNormal = normalize(v_worldNormal);
+  vec3 eyeToSurfaceDir = normalize(v_worldPosition - u_worldCameraPosition);
+  vec3 direction = reflect(eyeToSurfaceDir,worldNormal);
+
+  gl_FragColor = textureCube(u_texture, direction);
+}
+</script>
+
+
+
+
+<!-- *** Skybox Shader Section *** -->
+<script id="skybox-vertex-shader" type="x-shader/x-vertex">
+attribute vec4 a_position;
+varying vec4 v_position; // We need to use the position in the fragment shader as well
+void main() {
+  v_position = a_position;
+  gl_Position = a_position;
+}
+</script>
+<script id="skybox-fragment-shader" type="x-shader/x-fragment">
+precision mediump float;
+
+uniform samplerCube u_skybox;
+uniform mat4 u_viewDirectionProjectionInverse;
+
+varying vec4 v_position;
+void main() {
+  vec4 t = u_viewDirectionProjectionInverse * v_position;
+  gl_FragColor = textureCube(u_skybox, normalize(t.xyz / t.w));
+}
+</script>
+
+
+<script src="webgl-utils.js"></script>
+<script src="m4.js"></script>
+<script src="primitives.js"></script>
+<script src="mp3.js"></script>
+
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+<title>MP3</title>
+<link type="text/css" href="webgl-tutorials.css" rel="stylesheet" />
+</head>
+<body onload=startup();>
+<div class="description">
+If this text is still here, the mp is NOT READY FOR SUBMISSION! check for unused variables first. <br>
+CS 418: MP3 - Environment Mapping by Nikhil Simha<br>
+Included code libraries such as m4.js are taken from the prebuilt versions of TWGL at webglfundamentals.org<br>
+CSS styling (border and background) taken from webglfundamentals.org<br/>
+</div>
+<canvas id="canvas"></canvas>
+</body>
+
+</html>
