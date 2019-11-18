@@ -75,7 +75,7 @@ class TriMesh
     * Populate the JS arrays by parsing a string containing an OBJ file
     * @param {string} text of an OBJ file
     */
-    loadFromOBJ(fileText)
+    loadFromOBJ(fileText, type)
     {
     
         //Your code here
@@ -95,9 +95,16 @@ class TriMesh
             // elemArr = lnArr[i].split(" ");
             
             if (elemArr[0] == "v") {
-                this.vBuffer.push(parseFloat(elemArr[1]));
-                this.vBuffer.push(parseFloat(elemArr[2]));
-                this.vBuffer.push(parseFloat(elemArr[3]));
+                if (type == "cow.obj") {
+                    this.vBuffer.push(parseFloat(elemArr[1]));
+                    this.vBuffer.push(parseFloat(elemArr[2]));
+                    this.vBuffer.push(parseFloat(elemArr[3]));
+                }
+                else if (type == "pot.obj") {
+                    this.vBuffer.push(parseFloat(elemArr[1]/4));
+                    this.vBuffer.push(parseFloat(elemArr[2]/4-0.5));
+                    this.vBuffer.push(parseFloat(elemArr[3]/4));
+                }      
                 
                 this.numVertices++;
             }

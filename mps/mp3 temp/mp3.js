@@ -151,7 +151,7 @@ function uploadModelViewMatrixToShader(type) {
         gl.uniformMatrix4fv(shaderProgramReflect.mvMatrixUniform, false, mvMatrix);
     }
     else if (type == "refraction") {
-        console.log("LOL");
+        gl.uniformMatrix4fv(shaderProgramRefract.mvMatrixUniform, false, mvMatrix);
     }
 }
   
@@ -168,7 +168,7 @@ function uploadProjectionMatrixToShader(type) {
         gl.uniformMatrix4fv(shaderProgramReflect.pMatrixUniform, false, pMatrix);
     }
     else if (type == "refraction") {
-        console.log("LOL");
+        gl.uniformMatrix4fv(shaderProgramRefract.pMatrixUniform, false, pMatrix);
     }
 }
   
@@ -185,12 +185,12 @@ function uploadNormalMatrixToShader(type) {
         gl.uniformMatrix3fv(shaderProgram.nMatrixUniform, false, nMatrix);
     }
     else if (type == "reflection") { // jk we don't care about normal matrix so let's upload texture here instead
-        gl.bindTexture(gl.TEXTURE_CUBE_MAP, texture);
-        console.log("LOL"); // actually don't think i need to do anything, at least through the slides...
+        gl.uniformMatrix3fv(shaderProgramReflect.nMatrixUniform, false, nMatrix);
+        // console.log("LOL"); // actually don't think i need to do anything, at least through the slides...
         // gl.uniformMatrix3fv(shaderProgramReflect.vMatrixUniform, false, vMatrix);
     }
     else if (type == "refraction") {
-        console.log("LOL");
+        gl.uniformMatrix3fv(shaderProgramRefract.nMatrixUniform, false, nMatrix);
     }
 }
   
@@ -250,14 +250,14 @@ function degToRad(degrees) {
 /**
  * Populate buffers with data
  */
-function setupMesh(filename) {
+function setupMesh(filename, type) {
     //Your code here
     myMesh = new TriMesh();
     myPromise = asyncGetFile(filename);
     // We define what to do when the premise is resolved with the then() call,
     // and what to do when the promise is rejected with the catch() call.
     myPromise.then((retrievedText) => {
-       myMesh.loadFromOBJ(retrievedText);
+       myMesh.loadFromOBJ(retrievedText, type);
        console.log("Yay! got the file");
     })
     .catch(
@@ -276,11 +276,12 @@ function startup() {
 
   setupShadersPhong();
   setupShadersEnvMap();
+  setupShadersRefract();
 
   document.onkeydown = handleKeyDown;
   document.onkeyup = handleKeyUp;
 
-  setupMesh("cow.obj");
+  setupMesh("pot.obj", "pot.obj");
 
   // setup GLSL programs and lookup locations
 //   envmapProgramInfo = webglUtils.createProgramInfo(
@@ -477,6 +478,7 @@ function draw(time) {
             mat4.rotateY(mvMatrix, mvMatrix, degToRad(eulerY));
             mat4.multiply(mvMatrix,vMatrix,mvMatrix);
             setMatrixUniforms("reflection");
+            gl.bindTexture(gl.TEXTURE_CUBE_MAP, texture);
 
             // setLightUniforms(lightPosition,lAmbient,lDiffuse,lSpecular);
         
@@ -500,7 +502,36 @@ function draw(time) {
             // });
             // webglUtils.drawBufferInfo(gl, cubeBufferInfo);
         }
+        else if (document.getElementById("refraction").checked) { // TO DO: make your own envmap shader program like with the blinn phong, apply it.
+          gl.useProgram(shaderProgramRefract);
+          mvPushMatrix();
+          mat4.rotateY(mvMatrix, mvMatrix, degToRad(eulerY));
+          mat4.multiply(mvMatrix,vMatrix,mvMatrix);
+          setMatrixUniforms("refraction");
+          gl.bindTexture(gl.TEXTURE_CUBE_MAP, texture);
 
+          // setLightUniforms(lightPosition,lAmbient,lDiffuse,lSpecular);
+      
+          // if ((document.getElementById("polygon").checked) || (document.getElementById("wirepoly").checked))
+          // {
+              // setMaterialUniforms(shininess,kAmbient,
+              //                     kTerrainDiffuse,kSpecular); 
+              myMesh.drawTriangles();
+          // }
+          mvPopMatrix();
+
+          // gl.useProgram(envmapProgramInfo.program);
+          // webglUtils.createBufferInfoFromArrays
+          // webglUtils.setBuffersAndAttributes(gl, envmapProgramInfo, cubeBufferInfo);
+          // webglUtils.setUniforms(envmapProgramInfo, {
+          //   u_world: worldMatrix,
+          //   u_view: viewMatrix,
+          //   u_projection: projectionMatrix,
+          //   u_texture: texture,
+          //   u_worldCameraPosition: cameraPosition,
+          // });
+          // webglUtils.drawBufferInfo(gl, cubeBufferInfo);
+        }
     }
 
     // Draw the cube
@@ -605,8 +636,41 @@ function setupShadersEnvMap() {
 
     shaderProgramReflect.mvMatrixUniform = gl.getUniformLocation(shaderProgramReflect, "uMVMatrix");
     shaderProgramReflect.pMatrixUniform = gl.getUniformLocation(shaderProgramReflect, "uPMatrix");
+    shaderProgramReflect.nMatrixUniform = gl.getUniformLocation(shaderProgramReflect, "uNMatrix");
     shaderProgramReflect.uTextureUniform = gl.getUniformLocation(shaderProgramReflect, "uTexture");
     // shaderProgramReflect.vMatrixUniform = gl.getUniformLocation(shaderProgramReflect, "uVMatrix");
+}
+
+//----------------------------------------------------------------------------------
+/**
+ * Setup the fragment and vertex shaders **for the environment map specifically!**
+ */
+function setupShadersRefract() {
+  vertexShader = loadShaderFromDOM("envmap-vertex-shader-refract");
+  fragmentShader = loadShaderFromDOM("envmap-fragment-shader-refract");
+
+  shaderProgramRefract = gl.createProgram();
+  gl.attachShader(shaderProgramRefract, vertexShader);
+  gl.attachShader(shaderProgramRefract, fragmentShader);
+  gl.linkProgram(shaderProgramRefract);
+
+  if (!gl.getProgramParameter(shaderProgramRefract, gl.LINK_STATUS)) {
+      alert("Failed to setup shaders");
+  }
+  
+  gl.useProgram(shaderProgramRefract);
+
+  shaderProgramRefract.vertexPositionAttribute = gl.getAttribLocation(shaderProgramRefract, "aVertexPosition");
+  gl.enableVertexAttribArray(shaderProgramRefract.vertexPositionAttribute);
+
+  shaderProgramRefract.vertexNormalAttribute = gl.getAttribLocation(shaderProgramRefract, "aVertexNormal");
+  gl.enableVertexAttribArray(shaderProgramRefract.vertexNormalAttribute);
+
+  shaderProgramRefract.mvMatrixUniform = gl.getUniformLocation(shaderProgramRefract, "uMVMatrix");
+  shaderProgramRefract.pMatrixUniform = gl.getUniformLocation(shaderProgramRefract, "uPMatrix");
+  shaderProgramRefract.nMatrixUniform = gl.getUniformLocation(shaderProgramRefract, "uNMatrix");
+  shaderProgramRefract.uTextureUniform = gl.getUniformLocation(shaderProgramRefract, "uTexture");
+  // shaderProgramReflect.vMatrixUniform = gl.getUniformLocation(shaderProgramReflect, "uVMatrix");
 }
 
   //----------------------------------------------------------------------------------
