@@ -110,7 +110,6 @@ class TriMesh
             }
         }
         
-        console.log("Joe");
         for (var i = 0; i < 30; i++) {
             console.log(i, this.vBuffer[i]);
         }
