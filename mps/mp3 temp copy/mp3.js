@@ -28,6 +28,7 @@ var texture;
 /** @global model parameters */
 var eulerY=0;
 var cameraY=0;
+var rotY=0;
 
 /** @global origin */
 var target;
@@ -136,7 +137,9 @@ function handleKeyDown(event) {
         // Left cursor key
         event.preventDefault();
         cameraY -= 1;
-        vec3.rotateY(cameraPosition, cameraPosition, target, 0.01);
+        rotY += 1;
+        // eulerY -= 1;
+        // vec3.rotateY(cameraPosition, cameraPosition, target, 0.01);
         // mat4.rotateY(rotationMatrix, rotationMatrix, degToRad())
         // vec3.rotateY(lightPosition, lightPosition, target, 0.01); // i'm moving the light position because i accidentally did these calculations in NDC space
                                                                   // so this is a hacky (but valid) way to make it "like the real world"
@@ -144,13 +147,14 @@ function handleKeyDown(event) {
         event.preventDefault();
         // Right cursor key
         cameraY += 1;
-        vec3.rotateY(cameraPosition, cameraPosition, target, -0.01);
+        rotY -= 1;
+        // eulerY += 1;
+        // vec3.rotateY(cameraPosition, cameraPosition, target, -0.01);
         // vec3.rotateY(lightPosition, lightPosition, target, -0.01);
     } 
 }
 
 function handleKeyUp(event) {
-    //console.log("Key up ", event.key, " code ", event.code);
     currentlyPressedKeys[event.key] = false;
 }
 
@@ -208,24 +212,6 @@ function uploadNormalMatrixToShader(type) {
         gl.uniformMatrix3fv(shaderProgramRefract.nMatrixUniform, false, nMatrix);
     }
 }
-
-//-------------------------------------------------------------------------
-/**
- * Generates and sends the normal matrix to the shader
-*/
-function uploadViewMatrixToShader(type) {
-  if (type == "blinn-phong") {
-      gl.uniformMatrix4fv(shaderProgram.vMatrixUniform, false, cameraMatrix);
-  }
-  else if (type == "reflection") { // jk we don't care about normal matrix so let's upload texture here instead
-      gl.uniformMatrix4fv(shaderProgramReflect.vMatrixUniform, false, cameraMatrix);
-      // console.log("LOL"); // actually don't think i need to do anything, at least through the slides...
-      // gl.uniformMatrix3fv(shaderProgramReflect.vMatrixUniform, false, vMatrix);
-  }
-  else if (type == "refraction") {
-      gl.uniformMatrix4fv(shaderProgramRefract.vMatrixUniform, false, cameraMatrix);
-  }
-}
   
 //----------------------------------------------------------------------------------
 /**
@@ -253,8 +239,7 @@ function mvPopMatrix() {
  * Sends projection/modelview matrices to shader
  */
 function setMatrixUniforms(type) {
-    uploadModelViewMatrixToShader(type); //please rename this function to "uploadModelMatrixToShader" and rename mvMatrix to mMatrix
-    uploadViewMatrixToShader(type);      //also rename cameraMatrix to viewMatrix
+    uploadModelViewMatrixToShader(type);
     uploadNormalMatrixToShader(type);
     uploadProjectionMatrixToShader(type);
 }
@@ -420,16 +405,6 @@ function startup() {
   // Get the starting time.
   initial = 0;
 
-  // target = [0, 0, 0];
-  // var up = [0, 1, 0];
-  // // Compute the camera's matrix using look at.
-  // cameraMatrix = m4.lookAt(cameraPosition, target, up);
-
-  // // Make a view matrix from the camera matrix.
-  // viewMatrix = m4.inverse(cameraMatrix);
-
-  // mat4.multiply(mvMatrix, mvMatrix, viewMatrix);
-
   requestAnimationFrame(draw);
 
 }
@@ -465,7 +440,7 @@ function draw(time) {
     var up = [0, 1, 0];
     // Compute the camera's matrix using look at.
     var cameraMatrix = m4.lookAt(cameraPosition, target, up);
-    // rotateY(cameraMatrix, cameraMatrix, degToRad(cameraY));
+    mat4.rotateY(cameraMatrix, cameraMatrix, degToRad(cameraY));
 
     // Make a view matrix from the camera matrix.
     var viewMatrix = m4.inverse(cameraMatrix);
@@ -493,7 +468,10 @@ function draw(time) {
             gl.useProgram(shaderProgram);
             mvPushMatrix();
             mat4.rotateY(mvMatrix, mvMatrix, degToRad(eulerY));
+            mat4.rotateY(rotationMatrix, rotationMatrix, degToRad(rotY));
+            console.log(rotY, eulerY);
             setMatrixUniforms("blinn-phong");
+            gl.uniformMatrix4fv(shaderProgram.rMatrixUniform, false, rotationMatrix);
             setLightUniforms(lightPosition,lAmbient,lDiffuse,lSpecular);
         
             // if ((document.getElementById("polygon").checked) || (document.getElementById("wirepoly").checked))
@@ -522,8 +500,9 @@ function draw(time) {
             gl.useProgram(shaderProgramReflect);
             mvPushMatrix();
             mat4.rotateY(mvMatrix, mvMatrix, degToRad(eulerY));
+            mat4.rotateY(rotationMatrix, rotationMatrix, degToRad(rotY));
             setMatrixUniforms("reflection");
-            gl.uniform3fv(shaderProgramReflect.uniformCameraPositionLoc, cameraPosition);
+            gl.uniformMatrix4fv(shaderProgramReflect.rMatrixUniform, false, rotationMatrix);
             gl.bindTexture(gl.TEXTURE_CUBE_MAP, texture);
 
             // setLightUniforms(lightPosition,lAmbient,lDiffuse,lSpecular);
@@ -552,8 +531,9 @@ function draw(time) {
           gl.useProgram(shaderProgramRefract);
           mvPushMatrix();
           mat4.rotateY(mvMatrix, mvMatrix, degToRad(eulerY));
+          mat4.rotateY(rotationMatrix, rotationMatrix, degToRad(rotY));
           setMatrixUniforms("refraction");
-          gl.uniform3fv(shaderProgramRefract.uniformCameraPositionLoc, cameraPosition);
+          gl.uniformMatrix4fv(shaderProgramRefract.rMatrixUniform, false, rotationMatrix);
           gl.bindTexture(gl.TEXTURE_CUBE_MAP, texture);
 
           // setLightUniforms(lightPosition,lAmbient,lDiffuse,lSpecular);
@@ -645,7 +625,6 @@ function setupShadersPhong() {
     shaderProgram.mvMatrixUniform = gl.getUniformLocation(shaderProgram, "uMVMatrix");
     shaderProgram.pMatrixUniform = gl.getUniformLocation(shaderProgram, "uPMatrix");
     shaderProgram.nMatrixUniform = gl.getUniformLocation(shaderProgram, "uNMatrix");
-    shaderProgram.vMatrixUniform = gl.getUniformLocation(shaderProgram, "uVMatrix");
     shaderProgram.uniformLightPositionLoc = gl.getUniformLocation(shaderProgram, "uLightPosition");    
     shaderProgram.uniformAmbientLightColorLoc = gl.getUniformLocation(shaderProgram, "uAmbientLightColor");  
     shaderProgram.uniformDiffuseLightColorLoc = gl.getUniformLocation(shaderProgram, "uDiffuseLightColor");
@@ -654,6 +633,7 @@ function setupShadersPhong() {
     shaderProgram.uniformAmbientMaterialColorLoc = gl.getUniformLocation(shaderProgram, "uKAmbient");  
     shaderProgram.uniformDiffuseMaterialColorLoc = gl.getUniformLocation(shaderProgram, "uKDiffuse");
     shaderProgram.uniformSpecularMaterialColorLoc = gl.getUniformLocation(shaderProgram, "uKSpecular");
+    shaderProgram.rMatrixUniform = gl.getUniformLocation(shaderProgram, "uRMatrix");
 }
 
 //----------------------------------------------------------------------------------
@@ -685,8 +665,7 @@ function setupShadersEnvMap() {
     shaderProgramReflect.pMatrixUniform = gl.getUniformLocation(shaderProgramReflect, "uPMatrix");
     shaderProgramReflect.nMatrixUniform = gl.getUniformLocation(shaderProgramReflect, "uNMatrix");
     shaderProgramReflect.uTextureUniform = gl.getUniformLocation(shaderProgramReflect, "uTexture");
-    shaderProgramReflect.uniformCameraPositionLoc = gl.getUniformLocation(shaderProgramReflect, "uCameraPosition");
-    shaderProgramReflect.uVMatrixUniform = gl.getUniformLocation(shaderProgramReflect, "uVMatrix");
+    shaderProgramReflect.rMatrixUniform = gl.getUniformLocation(shaderProgramReflect, "uRMatrix");
 }
 
 //----------------------------------------------------------------------------------
@@ -718,8 +697,7 @@ function setupShadersRefract() {
   shaderProgramRefract.pMatrixUniform = gl.getUniformLocation(shaderProgramRefract, "uPMatrix");
   shaderProgramRefract.nMatrixUniform = gl.getUniformLocation(shaderProgramRefract, "uNMatrix");
   shaderProgramRefract.uTextureUniform = gl.getUniformLocation(shaderProgramRefract, "uTexture");
-  shaderProgramRefract.uniformCameraPositionLoc = gl.getUniformLocation(shaderProgramRefract, "uCameraPosition");
-  shaderProgramRefract.uVMatrixUniform = gl.getUniformLocation(shaderProgramRefract, "uVMatrix");
+  shaderProgramRefract.rMatrixUniform = gl.getUniformLocation(shaderProgramRefract, "uRMatrix");
 }
 
   //----------------------------------------------------------------------------------

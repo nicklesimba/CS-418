@@ -102,7 +102,7 @@ class TriMesh
                 }
                 else if (type == "pot.obj") {
                     this.vBuffer.push(parseFloat(elemArr[1]/4));
-                    this.vBuffer.push(parseFloat(elemArr[2]/4));
+                    this.vBuffer.push(parseFloat(elemArr[2]/4-0.5));
                     this.vBuffer.push(parseFloat(elemArr[3]/4));
                 }      
                 

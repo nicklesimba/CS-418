@@ -18,7 +18,7 @@ html {
     border: 1px solid black;
     /* NOTE: This size is changed if in iframe - see below '.iframe canvas' */
     width: 640px;
-    height: 640px;
+    height: 520px;
     display: block;
   }
   
@@ -131,7 +131,7 @@ html {
     }
     .iframe canvas {
       width: 640vw;
-      height: 640vh;
+      height: 520vh;
       border: none;
     }
     #uiContainer {

@@ -11,7 +11,7 @@ attribute vec3 aVertexPosition;
 uniform mat4 uMVMatrix;
 uniform mat4 uPMatrix;
 uniform mat3 uNMatrix;
-uniform mat4 uVMatrix;
+uniform mat4 uRMatrix;
 
 uniform vec3 uCameraPosition;
 
@@ -25,16 +25,17 @@ void main(void) {
 vec4 vertexPositionEye4 = uMVMatrix * vec4(aVertexPosition, 1.0);
 vPosition = vertexPositionEye4.xyz / vertexPositionEye4.w;
 // vNormal = normalize(uNMatrix * aVertexNormal);
-// vec4 eyePos = uVMatrix*vec4(vPosition, 1.0);
-vec3 eyePos = uCameraPosition - aVertexPosition;
+// vec3 eyePos = aVertexPosition - uCameraPosition;
+vec4 eyePos = uMVMatrix*vec4(aVertexPosition, 1.0);
 
 // vec4 N = uMVMatrix*vec4(vNormal, 1.0);
 
 // vec3 eyePos = uCameraPosition - aVertexPosition;
-// vec3 N = normalize(uNMatrix * aVertexNormal);
-vec4 N = uMVMatrix*vec4(aVertexNormal, 1.0);
+vec3 N = normalize(uNMatrix * aVertexNormal);
 
 R = reflect(eyePos.xyz, N.xyz);
+// vec3 tempR = reflect(eyePos.xyz, N.xyz);
+//R = (uRMatrix*vec4(tempR, 1.0)).xyz;
             
 gl_Position = uPMatrix*uMVMatrix*vec4(aVertexPosition, 1.0);
 }
@@ -154,7 +155,7 @@ void main() {
   uniform mat4 uMVMatrix;
   uniform mat4 uPMatrix;
   uniform mat3 uNMatrix;
-  uniform mat4 uVMatrix;
+  uniform mat4 uRMatrix;
   
   uniform vec3 uLightPosition;
   uniform vec3 uAmbientLightColor;
@@ -191,9 +192,8 @@ void main() {
   // Get the vertex position in eye coordinates
   vec4 vertexPositionEye4 = uMVMatrix * vec4(aVertexPosition, 1.0);
   vPosition = vertexPositionEye4.xyz / vertexPositionEye4.w;
-  // vNormal = normalize(uNMatrix * aVertexNormal);
-  vNormal = (uMVMatrix*vec4(aVertexNormal, 1.0)).xyz;
-
+  vNormal = normalize(uNMatrix * aVertexNormal);
+              
   gl_Position = uPMatrix*uMVMatrix*vec4(aVertexPosition, 1.0);
   }
 </script>

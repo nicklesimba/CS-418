@@ -8,7 +8,7 @@
 attribute vec3 aVertexNormal;
 attribute vec3 aVertexPosition;
  
-uniform mat4 uMVMatrix;
+uniform mat4 uMMatrix;
 uniform mat4 uPMatrix;
 uniform mat3 uNMatrix;
 uniform mat4 uVMatrix;
@@ -16,27 +16,18 @@ uniform mat4 uVMatrix;
 uniform vec3 uCameraPosition;
 
 varying vec3 R;
-varying vec3 vPosition;
-varying vec3 vNormal;
 
 void main(void) {
 
 // Get the vertex position in eye coordinates
-vec4 vertexPositionEye4 = uMVMatrix * vec4(aVertexPosition, 1.0);
-vPosition = vertexPositionEye4.xyz / vertexPositionEye4.w;
-// vNormal = normalize(uNMatrix * aVertexNormal);
-// vec4 eyePos = uVMatrix*vec4(vPosition, 1.0);
-vec3 eyePos = uCameraPosition - aVertexPosition;
+vec4 rotatedLad = uMMatrix*vec4(aVertexPosition, 1.0);
+vec3 eyePos = rotatedLad.xyz - uCameraPosition;
 
-// vec4 N = uMVMatrix*vec4(vNormal, 1.0);
-
-// vec3 eyePos = uCameraPosition - aVertexPosition;
-// vec3 N = normalize(uNMatrix * aVertexNormal);
-vec4 N = uMVMatrix*vec4(aVertexNormal, 1.0);
+vec4 N = uMMatrix*vec4(aVertexNormal, 1.0);
 
 R = reflect(eyePos.xyz, N.xyz);
-            
-gl_Position = uPMatrix*uMVMatrix*vec4(aVertexPosition, 1.0);
+
+gl_Position = uVMatrix*uMMatrix*vec4(aVertexPosition, 1.0);
 }
 </script>
 <!-- fragment shader -->
@@ -59,7 +50,7 @@ void main() {
 attribute vec3 aVertexNormal;
 attribute vec3 aVertexPosition;
   
-uniform mat4 uMVMatrix;
+uniform mat4 uMMatrix;
 uniform mat4 uPMatrix;
 uniform mat3 uNMatrix;
 uniform mat4 uVMatrix;
@@ -73,20 +64,19 @@ varying vec3 vNormal;
 void main(void) {
 
 // Get the vertex position in eye coordinates
-// vec4 vertexPositionEye4 = uMVMatrix * vec4(aVertexPosition, 1.0);
+// vec4 vertexPositionEye4 = uMMatrix * vec4(aVertexPosition, 1.0);
 // vPosition = vertexPositionEye4.xyz / vertexPositionEye4.w;
 // vNormal = normalize(uNMatrix * aVertexNormal);
-// vec4 eyePos  = uMVMatrix*vec4(vPosition, 1.0);
-// vec4 NN = uMVMatrix*vec4(aVertexNormal, 1.0);
+// vec4 eyePos  = uMMatrix*vec4(vPosition, 1.0);
+// vec4 NN = uMMatrix*vec4(aVertexNormal, 1.0);
 // vec3 N = normalize(NN.xyz);
-// vec3 eyePos = uCameraPosition - aVertexPosition;
-vec3 eyePos = aVertexPosition - uCameraPosition;
+vec3 eyePos = uCameraPosition - aVertexPosition;
 vec3 N = normalize(uNMatrix * aVertexNormal);
 
 T = refract(eyePos.xyz, N, 1.00/1.52);
 // T = refract(eyePos.xyz, N, 0.1);
             
-gl_Position = uPMatrix*uMVMatrix*vec4(aVertexPosition, 1.0);
+gl_Position = uMMatrix*vec4(aVertexPosition, 1.0);
 }
 </script>
 <!-- fragment shader -->
@@ -100,58 +90,17 @@ uniform samplerCube uTexture;
 void main() {
   vec4 refractColor = textureCube(uTexture, T);
   refractColor = mix(refractColor, vec4(1.0, 1.0, 1.0, 0.2), 0.3);
-  refractColor.w = 0.7;
+  // refractColor.w = 0.7;
 
   gl_FragColor = refractColor;
   // gl_FragColor = vec4(1, 1, 1, 1);
-}
-</script>
-<script id="envmap-vertex-shader-meme" type="x-shader/x-vertex-meme">
-// Per vertex information
-attribute vec4 a_position;
-attribute vec3 a_normal;
-
-uniform mat4 u_projection;
-uniform mat4 u_view;
-uniform mat4 u_world;
-
-varying vec3 v_worldPosition;
-varying vec3 v_worldNormal;
-
-void main() {
-  // Calculate position
-  gl_Position = u_projection * u_view * u_world * a_position;
-
-  v_worldPosition = (u_world * a_position).xyz;
-
-  // Orient normal vectors correctly
-  v_worldNormal = mat3(u_world) * a_normal;
-}
-</script>
-<!-- fragment shader -->
-<script id="envmap-fragment-shader-meme" type="x-shader/x-fragment-meme">
-precision mediump float;
-
-varying vec3 v_worldPosition;
-varying vec3 v_worldNormal;
-
-uniform samplerCube u_texture;
-
-uniform vec3 u_worldCameraPosition;
-
-void main() {
-  vec3 worldNormal = normalize(v_worldNormal);
-  vec3 eyeToSurfaceDir = normalize(v_worldPosition - u_worldCameraPosition);
-  vec3 direction = reflect(eyeToSurfaceDir,worldNormal);
-
-  gl_FragColor = textureCube(u_texture, direction);
 }
 </script>
 <script id="shader-vs" type="x-shader/x-vertex">
   attribute vec3 aVertexNormal;
   attribute vec3 aVertexPosition;
  
-  uniform mat4 uMVMatrix;
+  uniform mat4 uMMatrix;
   uniform mat4 uPMatrix;
   uniform mat3 uNMatrix;
   uniform mat4 uVMatrix;
@@ -189,12 +138,12 @@ void main() {
     vShininess = uShininess;
 
   // Get the vertex position in eye coordinates
-  vec4 vertexPositionEye4 = uMVMatrix * vec4(aVertexPosition, 1.0);
+  vec4 vertexPositionEye4 = uMMatrix * vec4(aVertexPosition, 1.0);
   vPosition = vertexPositionEye4.xyz / vertexPositionEye4.w;
   // vNormal = normalize(uNMatrix * aVertexNormal);
-  vNormal = (uMVMatrix*vec4(aVertexNormal, 1.0)).xyz;
+  vNormal = (uMMatrix*vec4(aVertexNormal, 1.0)).xyz;
 
-  gl_Position = uPMatrix*uMVMatrix*vec4(aVertexPosition, 1.0);
+  gl_Position = uVMatrix*uMMatrix*vec4(aVertexPosition, 1.0);
   }
 </script>
 <script id="shader-fs" type="x-shader/x-fragment">
@@ -284,7 +233,7 @@ If this text is still here, the mp is NOT READY FOR SUBMISSION! check for unused
 Nikhil Simha<br>
 CS 418: MP3 - Environment Mapping<br>
 </div>
-<canvas id="canvas" width="800" height="800"></canvas>
+<canvas id="canvas"></canvas>
 
 <form id="input_form">
     <fieldset>

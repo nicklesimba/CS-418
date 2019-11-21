@@ -18,8 +18,7 @@ var envmapProgramInfo;
 /** @global The skybox program */
 var skyboxProgramInfo;
 
-/** @global The cube and quad buffers */
-var cubeBufferInfo;
+/** @global The quad buffer */
 var quadBufferInfo;
 
 /** @global the texture used for the cubemap */
@@ -27,7 +26,6 @@ var texture;
 
 /** @global model parameters */
 var eulerY=0;
-var cameraY=0;
 
 /** @global origin */
 var target;
@@ -38,20 +36,17 @@ var cameraPosition;
 /** @global A simple GLSL shader program */
 var shaderProgram;
 
-/** @global The Modelview matrix */
-var mvMatrix = mat4.create();
-
-/** @global The View matrix */
-var vMatrix = mat4.create();
+/** @global The model matrix */
+var mMatrix = mat4.create();
 
 /** @global The Projection matrix */
 var pMatrix = mat4.create();
 
+/** @global The Projection matrix used for skybox*/
+var projectionMatrix = mat4.create();
+
 /** @global The Normal matrix */
 var nMatrix = mat3.create();
-
-/** @global The matrix stack for hierarchical modeling */
-var mvMatrixStack = [];
 
 /** @global An object holding the geometry for a 3D mesh */
 var myMesh;
@@ -66,9 +61,9 @@ var viewPt = vec3.fromValues(0.0,0.0,0.0);
 
 //Light parameters
 /** @global Light position in VIEW coordinates */
-var lightPosition = [0,2,-2];
+var lightPosition = [2,2,2];
 /** @global Ambient light color/intensity for Phong reflection */
-var lAmbient = [0,0,0];
+var lAmbient = [0.1,0.1,0.1];
 /** @global Diffuse light color/intensity for Phong reflection */
 var lDiffuse = [1,1,1];
 /** @global Specular light color/intensity for Phong reflection */
@@ -82,7 +77,7 @@ var kTerrainDiffuse = [205.0/255.0,163.0/255.0,63.0/255.0];
 /** @global Specular material color/intensity for Phong reflection */
 var kSpecular = [1.0,1.0,1.0];
 /** @global Shininess exponent for Phong reflection */
-var shininess = 23;
+var shininess = 10;
 /** @global Edge color fpr wireframeish rendering */
 var kEdgeBlack = [0.0,0.0,0.0];
 /** @global Edge color for wireframe rendering */
@@ -94,8 +89,8 @@ var cameraMatrix = mat4.create();;
 // Make a view matrix from the camera matrix.
 var viewMatrix = mat4.create();
 
-// Make a rotation matrix for orbit
-var rotationMatrix = mat4.create();
+// stack for model matrix
+var mMatrixStack = [];
 
 /** @global Location of the camera in world coordinates */
 // var eyePt;
@@ -118,7 +113,7 @@ function asyncGetFile(url) {
 }
 
 //----------------------------------------------------------------------------------
-//Code to handle user interaction
+// User interaction
 var currentlyPressedKeys = {};
 
 function handleKeyDown(event) {
@@ -135,17 +130,17 @@ function handleKeyDown(event) {
     if (currentlyPressedKeys["ArrowLeft"]){
         // Left cursor key
         event.preventDefault();
-        cameraY -= 1;
         vec3.rotateY(cameraPosition, cameraPosition, target, 0.01);
         // mat4.rotateY(rotationMatrix, rotationMatrix, degToRad())
-        // vec3.rotateY(lightPosition, lightPosition, target, 0.01); // i'm moving the light position because i accidentally did these calculations in NDC space
+        vec3.rotateY(lightPosition, lightPosition, target, 0.01); // i'm moving the light position because i accidentally did these calculations in NDC space
                                                                   // so this is a hacky (but valid) way to make it "like the real world"
+        eulerY += 0.5729578;
     } else if (currentlyPressedKeys["ArrowRight"]){
         event.preventDefault();
         // Right cursor key
-        cameraY += 1;
         vec3.rotateY(cameraPosition, cameraPosition, target, -0.01);
-        // vec3.rotateY(lightPosition, lightPosition, target, -0.01);
+        vec3.rotateY(lightPosition, lightPosition, target, -0.01);
+        eulerY -= 0.5729578;
     } 
 }
 
@@ -158,15 +153,15 @@ function handleKeyUp(event) {
 /**
  * Sends Modelview matrix to shader
  */
-function uploadModelViewMatrixToShader(type) {
+function uploadModelMatrixToShader(type) {
     if (type == "blinn-phong") {
-        gl.uniformMatrix4fv(shaderProgram.mvMatrixUniform, false, mvMatrix);
+        gl.uniformMatrix4fv(shaderProgram.mMatrixUniform, false, mMatrix);
     }
     else if (type == "reflection") {
-        gl.uniformMatrix4fv(shaderProgramReflect.mvMatrixUniform, false, mvMatrix);
+        gl.uniformMatrix4fv(shaderProgramReflect.mMatrixUniform, false, mMatrix);
     }
     else if (type == "refraction") {
-        gl.uniformMatrix4fv(shaderProgramRefract.mvMatrixUniform, false, mvMatrix);
+        gl.uniformMatrix4fv(shaderProgramRefract.mMatrixUniform, false, mMatrix);
     }
 }
   
@@ -176,23 +171,22 @@ function uploadModelViewMatrixToShader(type) {
  */
 function uploadProjectionMatrixToShader(type) {
     if (type == "blinn-phong") {
-        gl.uniformMatrix4fv(shaderProgram.pMatrixUniform, 
-                        false, pMatrix);
+        gl.uniformMatrix4fv(shaderProgram.pMatrixUniform, false, projectionMatrix);
     }
     else if (type == "reflection") {
-        gl.uniformMatrix4fv(shaderProgramReflect.pMatrixUniform, false, pMatrix);
+        gl.uniformMatrix4fv(shaderProgramReflect.pMatrixUniform, false, projectionMatrix);
     }
     else if (type == "refraction") {
-        gl.uniformMatrix4fv(shaderProgramRefract.pMatrixUniform, false, pMatrix);
+        gl.uniformMatrix4fv(shaderProgramRefract.pMatrixUniform, false, projectionMatrix);
     }
 }
   
 //-------------------------------------------------------------------------
 /**
- * Generates and sends the normal matrix to the shader
+ * Generates/sends the normal matrix to the shader
 */
 function uploadNormalMatrixToShader(type) {
-    mat3.fromMat4(nMatrix,mvMatrix);
+    mat3.fromMat4(nMatrix,mMatrix);
     mat3.transpose(nMatrix,nMatrix);
     mat3.invert(nMatrix,nMatrix);
     
@@ -211,7 +205,7 @@ function uploadNormalMatrixToShader(type) {
 
 //-------------------------------------------------------------------------
 /**
- * Generates and sends the normal matrix to the shader
+ * Generates/sends the normal matrix to the shader
 */
 function uploadViewMatrixToShader(type) {
   if (type == "blinn-phong") {
@@ -226,34 +220,34 @@ function uploadViewMatrixToShader(type) {
       gl.uniformMatrix4fv(shaderProgramRefract.vMatrixUniform, false, cameraMatrix);
   }
 }
-  
+
 //----------------------------------------------------------------------------------
 /**
  * Pushes matrix onto modelview matrix stack
 */
-function mvPushMatrix() {
-    var copy = mat4.clone(mvMatrix);
-    mvMatrixStack.push(copy);
+function mPushMatrix() {
+  var copy = mat4.clone(mMatrix);
+  mMatrixStack.push(copy);
 }
-  
-  
+
+
 //----------------------------------------------------------------------------------
 /**
- * Pops matrix off of modelview matrix stack
- */
-function mvPopMatrix() {
-    if (mvMatrixStack.length == 0) {
-    throw "Invalid popMatrix!";
-    }
-    mvMatrix = mvMatrixStack.pop();
+* Pops matrix off of modelview matrix stack
+*/
+function mPopMatrix() {
+  if (mMatrixStack.length == 0) {
+  throw "Invalid popMatrix!";
+  }
+  mMatrix = mMatrixStack.pop();
 }
-  
+
 //----------------------------------------------------------------------------------
 /**
  * Sends projection/modelview matrices to shader
  */
 function setMatrixUniforms(type) {
-    uploadModelViewMatrixToShader(type); //please rename this function to "uploadModelMatrixToShader" and rename mvMatrix to mMatrix
+    uploadModelMatrixToShader(type); //please rename this function to "uploadModelMatrixToShader" and rename mvMatrix to mMatrix
     uploadViewMatrixToShader(type);      //also rename cameraMatrix to viewMatrix
     uploadNormalMatrixToShader(type);
     uploadProjectionMatrixToShader(type);
@@ -282,7 +276,7 @@ function degToRad(degrees) {
 
 //----------------------------------------------------------------------------------
 /**
- * Populate buffers with data
+ * Fill buffers with data
  */
 function setupMesh(filename, type) {
     //Your code here
@@ -317,38 +311,12 @@ function startup() {
 
   setupMesh("pot.obj", "pot.obj");
 
-  // setup GLSL programs and lookup locations
-//   envmapProgramInfo = webglUtils.createProgramInfo(
-//       gl, ["envmap-vertex-shader-meme", "envmap-fragment-shader-meme"]);
-
-//   console.log(envmapProgramInfo.program);
-
-//   envmapProgramInfo.program.vertexPositionAttribute = gl.getAttribLocation(envmapProgramInfo.program, "a_position");
-//   gl.enableVertexAttribArray(envmapProgramInfo.program.vertexPositionAttribute);
-
-//   envmapProgramInfo.program.vertexNormalAttribute = gl.getAttribLocation(envmapProgramInfo.program, "a_normal");
-//   gl.enableVertexAttribArray(envmapProgramInfo.program.vertexNormalAttribute);
-
-//   envmapProgramInfo.program.mvMatrixUniform = gl.getUniformLocation(envmapProgramInfo.program, "u_world");
-//   envmapProgramInfo.program.pMatrixUniform = gl.getUniformLocation(envmapProgramInfo.program, "u_projection");
-//   envmapProgramInfo.program.vMatrixUniform = gl.getUniformLocation(envmapProgramInfo.program, "u_view")
-//   envmapProgramInfo.program.nMatrixUniform = gl.getUniformLocation(envmapProgramInfo.program, "u_world");
-
-//   console.log(envmapProgramInfo.program);
-
   skyboxProgramInfo = webglUtils.createProgramInfo(
       gl, ["skybox-vertex-shader", "skybox-fragment-shader"]);
-//   envmapProgram = webglUtils.createProgramFromScripts(
-//         gl, ["envmap-vertex-shader", "envmap-fragment-shader"]);
-//   skyboxProgram = webglUtils.createProgramFromScripts(
-//         gl, ["skybox-vertex-shader", "skybox-fragment-shader"]);
 
-  // Make and fill buffers with vertex info
-//   cubeBufferInfo = primitives.createCubeBufferInfo(gl, 1);
-  cubeBufferInfo = primitives.createCubeBufferInfo(gl, 3);
   quadBufferInfo = primitives.createXYQuadBufferInfo(gl);
 
-  // Create a texture.
+  // Make the texture
   texture = gl.createTexture();
   gl.bindTexture(gl.TEXTURE_CUBE_MAP, texture);
 
@@ -401,7 +369,7 @@ function startup() {
     const image = new Image();
     image.src = url;
     image.addEventListener('load', function() {
-      // Now that the image has loaded make copy it to the texture.
+      // copy to texture since loading is done
       gl.bindTexture(gl.TEXTURE_CUBE_MAP, texture);
       gl.texImage2D(target, level, internalFormat, format, type, image);
       gl.generateMipmap(gl.TEXTURE_CUBE_MAP);
@@ -416,19 +384,8 @@ function startup() {
   cameraPosition = [Math.cos(0 * .1) * 2, 0, Math.sin(0 * .1) * 2];
   // eyePt = vec3.clone(cameraPosition);
 
-  var spinCamera = true;
-  // Get the starting time.
-  initial = 0;
-
-  // target = [0, 0, 0];
-  // var up = [0, 1, 0];
-  // // Compute the camera's matrix using look at.
-  // cameraMatrix = m4.lookAt(cameraPosition, target, up);
-
-  // // Make a view matrix from the camera matrix.
-  // viewMatrix = m4.inverse(cameraMatrix);
-
-  // mat4.multiply(mvMatrix, mvMatrix, viewMatrix);
+  // starting time, but i didn't end up using this lol
+  // initial = 0;
 
   requestAnimationFrame(draw);
 
@@ -438,43 +395,41 @@ function startup() {
 function draw(time) {
     // convert to seconds
     time *= 0.001;
-    // Subtract the previous time from the current time
-    var deltaTime = time - initial;
-    // Remember the current time for the next frame.
-    initial = time;
+    // Time difference...that i also didn't end up using
+    // var deltaTime = time - initial;
+
+    // Remember the current time for the next frame. didn't end up needing this
+    // initial = time;
 
     webglUtils.resizeCanvasToDisplaySize(gl.canvas);
 
-    // Tell WebGL how to convert from clip space to pixels
     gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
 
     // gl.enable(gl.CULL_FACE);
     gl.enable(gl.DEPTH_TEST);
 
-    // Clear the canvas AND the depth buffer.
-    // gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-
-    // Compute the projection matrix
+    // Calculate projection matrix
     var aspect = gl.canvas.clientWidth / gl.canvas.clientHeight;
-    var projectionMatrix =
-        m4.perspective(FOV, aspect, 1, 2000);
+    projectionMatrix =
+        m4.perspective(FOV, aspect, 0.001, 2000);
 
-    // camera going in circle 2 units from origin looking at origin
+    mat4.perspective(pMatrix,degToRad(45), gl.viewportWidth / gl.viewportHeight, 0.5, 200.0);
+
+    // camera going in circle 2 units from origin looking at origin. since i am controlling it manually i don't need this to animate on its own.
     // var cameraPosition = [Math.cos(time * .1) * 2, 0, Math.sin(time * .1) * 2];
     target = [0, 0, 0];
     var up = [0, 1, 0];
-    // Compute the camera's matrix using look at.
+    // Compute the camera's matrix using look at. this is honestly the view matrix but my naming convention is trash
     var cameraMatrix = m4.lookAt(cameraPosition, target, up);
-    // rotateY(cameraMatrix, cameraMatrix, degToRad(cameraY));
 
-    // Make a view matrix from the camera matrix.
+    // inverse of camera matrix, poorly named viewMatrix
     var viewMatrix = m4.inverse(cameraMatrix);
 
 
     // Rotate the cube around the x axis
     // var worldMatrix = m4.xRotation(time * 0.11);
 
-    // We only care about direciton so remove the translation
+    // Get rid of translation for skybox
     var viewDirectionMatrix = m4.copy(viewMatrix);
     viewDirectionMatrix[12] = 0;
     viewDirectionMatrix[13] = 0;
@@ -491,107 +446,36 @@ function draw(time) {
     if (myMesh.loaded() == true) {
         if (document.getElementById("blinn-phong").checked) {
             gl.useProgram(shaderProgram);
-            mvPushMatrix();
-            mat4.rotateY(mvMatrix, mvMatrix, degToRad(eulerY));
+            mPushMatrix();
+            mat4.rotateY(mMatrix, mMatrix, degToRad(eulerY));
             setMatrixUniforms("blinn-phong");
             setLightUniforms(lightPosition,lAmbient,lDiffuse,lSpecular);
-        
-            // if ((document.getElementById("polygon").checked) || (document.getElementById("wirepoly").checked))
-            // {
-                setMaterialUniforms(shininess,kAmbient,
-                                    kTerrainDiffuse,kSpecular); 
-                myMesh.drawTriangles();
-            // }
-        
-            // if(document.getElementById("wirepoly").checked)
-            // {   
-            //     setMaterialUniforms(shininess,kAmbient,
-            //                         kEdgeBlack,kSpecular);
-            //     myMesh.drawEdges();
-            // }   
-
-            // if(document.getElementById("wireframe").checked)
-            // {
-            //     setMaterialUniforms(shininess,kAmbient,
-            //                         kEdgeWhite,kSpecular);
-            //     myMesh.drawEdges();
-            // }   
-            mvPopMatrix();
+            setMaterialUniforms(shininess,kAmbient,
+                                kTerrainDiffuse,kSpecular); 
+            myMesh.drawTriangles();
+            mPopMatrix();
         }
         else if (document.getElementById("reflection").checked) { 
             gl.useProgram(shaderProgramReflect);
-            mvPushMatrix();
-            mat4.rotateY(mvMatrix, mvMatrix, degToRad(eulerY));
+            mPushMatrix();
+            mat4.rotateY(mMatrix, mMatrix, degToRad(eulerY));
             setMatrixUniforms("reflection");
             gl.uniform3fv(shaderProgramReflect.uniformCameraPositionLoc, cameraPosition);
             gl.bindTexture(gl.TEXTURE_CUBE_MAP, texture);
-
-            // setLightUniforms(lightPosition,lAmbient,lDiffuse,lSpecular);
-        
-            // if ((document.getElementById("polygon").checked) || (document.getElementById("wirepoly").checked))
-            // {
-                // setMaterialUniforms(shininess,kAmbient,
-                //                     kTerrainDiffuse,kSpecular); 
-                myMesh.drawTriangles();
-            // }
-            mvPopMatrix();
-
-            // gl.useProgram(envmapProgramInfo.program);
-            // webglUtils.createBufferInfoFromArrays
-            // webglUtils.setBuffersAndAttributes(gl, envmapProgramInfo, cubeBufferInfo);
-            // webglUtils.setUniforms(envmapProgramInfo, {
-            //   u_world: worldMatrix,
-            //   u_view: viewMatrix,
-            //   u_projection: projectionMatrix,
-            //   u_texture: texture,
-            //   u_worldCameraPosition: cameraPosition,
-            // });
-            // webglUtils.drawBufferInfo(gl, cubeBufferInfo);
+            myMesh.drawTriangles();
+            mPopMatrix();
         }
         else if (document.getElementById("refraction").checked) { 
-          gl.useProgram(shaderProgramRefract);
-          mvPushMatrix();
-          mat4.rotateY(mvMatrix, mvMatrix, degToRad(eulerY));
-          setMatrixUniforms("refraction");
-          gl.uniform3fv(shaderProgramRefract.uniformCameraPositionLoc, cameraPosition);
-          gl.bindTexture(gl.TEXTURE_CUBE_MAP, texture);
-
-          // setLightUniforms(lightPosition,lAmbient,lDiffuse,lSpecular);
-      
-          // if ((document.getElementById("polygon").checked) || (document.getElementById("wirepoly").checked))
-          // {
-              // setMaterialUniforms(shininess,kAmbient,
-              //                     kTerrainDiffuse,kSpecular); 
-              myMesh.drawTriangles();
-          // }
-          mvPopMatrix();
-
-          // gl.useProgram(envmapProgramInfo.program);
-          // webglUtils.createBufferInfoFromArrays
-          // webglUtils.setBuffersAndAttributes(gl, envmapProgramInfo, cubeBufferInfo);
-          // webglUtils.setUniforms(envmapProgramInfo, {
-          //   u_world: worldMatrix,
-          //   u_view: viewMatrix,
-          //   u_projection: projectionMatrix,
-          //   u_texture: texture,
-          //   u_worldCameraPosition: cameraPosition,
-          // });
-          // webglUtils.drawBufferInfo(gl, cubeBufferInfo);
+            gl.useProgram(shaderProgramRefract);
+            mPushMatrix();
+            mat4.rotateY(mMatrix, mMatrix, degToRad(eulerY));
+            setMatrixUniforms("refraction");
+            gl.uniform3fv(shaderProgramRefract.uniformCameraPositionLoc, cameraPosition);
+            gl.bindTexture(gl.TEXTURE_CUBE_MAP, texture);
+            myMesh.drawTriangles();
+            mPopMatrix();
         }
     }
-
-    // Draw the cube
-    // gl.useProgram(envmapProgramInfo.program);
-    // webglUtils.setBuffersAndAttributes(gl, envmapProgramInfo, cubeBufferInfo);
-    // webglUtils.setUniforms(envmapProgramInfo, {
-    //   u_world: worldMatrix,
-    //   u_view: viewMatrix,
-    //   u_projection: projectionMatrix,
-    //   u_texture: texture,
-    //   u_worldCameraPosition: cameraPosition,
-    // });
-    // webglUtils.drawBufferInfo(gl, cubeBufferInfo);
-
 
     // Draw the skybox
     gl.useProgram(skyboxProgramInfo.program);
@@ -601,18 +485,6 @@ function draw(time) {
       u_skybox: texture,
     });
     webglUtils.drawBufferInfo(gl, quadBufferInfo);
-
-    // Operation skybox cube
-    // gl.useProgram(skyboxProgramInfo.program);
-    // webglUtils.setBuffersAndAttributes(gl, skyboxProgramInfo, cubeBufferInfo);
-    // webglUtils.setUniforms(skyboxProgramInfo, {
-    //   u_world: worldMatrix,
-    //   u_view: viewMatrix,
-    //   u_projection: projectionMatrix,
-    //   u_texture: texture,
-    //   u_worldCameraPosition: cameraPosition,
-    // });
-    // webglUtils.drawBufferInfo(gl, cubeBufferInfo);
 
     requestAnimationFrame(draw);
 }
@@ -642,7 +514,7 @@ function setupShadersPhong() {
     shaderProgram.vertexNormalAttribute = gl.getAttribLocation(shaderProgram, "aVertexNormal");
     gl.enableVertexAttribArray(shaderProgram.vertexNormalAttribute);
   
-    shaderProgram.mvMatrixUniform = gl.getUniformLocation(shaderProgram, "uMVMatrix");
+    shaderProgram.mMatrixUniform = gl.getUniformLocation(shaderProgram, "uMMatrix");
     shaderProgram.pMatrixUniform = gl.getUniformLocation(shaderProgram, "uPMatrix");
     shaderProgram.nMatrixUniform = gl.getUniformLocation(shaderProgram, "uNMatrix");
     shaderProgram.vMatrixUniform = gl.getUniformLocation(shaderProgram, "uVMatrix");
@@ -658,7 +530,7 @@ function setupShadersPhong() {
 
 //----------------------------------------------------------------------------------
 /**
- * Setup the fragment and vertex shaders **for the environment map specifically!**
+ * Setup the fragment and vertex shaders **for the reflection stuff specifically!**
  */
 function setupShadersEnvMap() {
     vertexShader = loadShaderFromDOM("envmap-vertex-shader");
@@ -681,17 +553,17 @@ function setupShadersEnvMap() {
     shaderProgramReflect.vertexNormalAttribute = gl.getAttribLocation(shaderProgramReflect, "aVertexNormal");
     gl.enableVertexAttribArray(shaderProgramReflect.vertexNormalAttribute);
 
-    shaderProgramReflect.mvMatrixUniform = gl.getUniformLocation(shaderProgramReflect, "uMVMatrix");
+    shaderProgramReflect.mMatrixUniform = gl.getUniformLocation(shaderProgramReflect, "uMMatrix");
     shaderProgramReflect.pMatrixUniform = gl.getUniformLocation(shaderProgramReflect, "uPMatrix");
     shaderProgramReflect.nMatrixUniform = gl.getUniformLocation(shaderProgramReflect, "uNMatrix");
     shaderProgramReflect.uTextureUniform = gl.getUniformLocation(shaderProgramReflect, "uTexture");
     shaderProgramReflect.uniformCameraPositionLoc = gl.getUniformLocation(shaderProgramReflect, "uCameraPosition");
-    shaderProgramReflect.uVMatrixUniform = gl.getUniformLocation(shaderProgramReflect, "uVMatrix");
+    shaderProgramReflect.vMatrixUniform = gl.getUniformLocation(shaderProgramReflect, "uVMatrix");
 }
 
 //----------------------------------------------------------------------------------
 /**
- * Setup the fragment and vertex shaders **for the environment map specifically!**
+ * Setup the fragment and vertex shaders **for the refraction stuff specifically!**
  */
 function setupShadersRefract() {
   vertexShader = loadShaderFromDOM("envmap-vertex-shader-refract");
@@ -714,12 +586,12 @@ function setupShadersRefract() {
   shaderProgramRefract.vertexNormalAttribute = gl.getAttribLocation(shaderProgramRefract, "aVertexNormal");
   gl.enableVertexAttribArray(shaderProgramRefract.vertexNormalAttribute);
 
-  shaderProgramRefract.mvMatrixUniform = gl.getUniformLocation(shaderProgramRefract, "uMVMatrix");
+  shaderProgramRefract.mMatrixUniform = gl.getUniformLocation(shaderProgramRefract, "uMMatrix");
   shaderProgramRefract.pMatrixUniform = gl.getUniformLocation(shaderProgramRefract, "uPMatrix");
   shaderProgramRefract.nMatrixUniform = gl.getUniformLocation(shaderProgramRefract, "uNMatrix");
   shaderProgramRefract.uTextureUniform = gl.getUniformLocation(shaderProgramRefract, "uTexture");
   shaderProgramRefract.uniformCameraPositionLoc = gl.getUniformLocation(shaderProgramRefract, "uCameraPosition");
-  shaderProgramRefract.uVMatrixUniform = gl.getUniformLocation(shaderProgramRefract, "uVMatrix");
+  shaderProgramRefract.vMatrixUniform = gl.getUniformLocation(shaderProgramRefract, "uVMatrix");
 }
 
   //----------------------------------------------------------------------------------
