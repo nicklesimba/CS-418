@@ -1,0 +1,256 @@
+<!-- Licensed under a BSD license. See license.html for license -->
+<!DOCTYPE html>
+<html>
+
+<!-- *** Teapot Shader Section - includes shading, reflection, and refraction *** -->
+<script id="envmap-vertex-shader" type="x-shader/x-vertex">
+// Per vertex information
+attribute vec3 aVertexNormal;
+attribute vec3 aVertexPosition;
+ 
+uniform mat4 uMMatrix;
+uniform mat4 uPMatrix;
+uniform mat3 uNMatrix;
+uniform mat4 uVMatrix;
+
+uniform vec3 uCameraPosition;
+
+varying vec3 R;
+
+void main(void) {
+
+// Get the vertex position in eye coordinates
+vec4 rotatedLad = uMMatrix*vec4(aVertexPosition, 1.0);
+vec3 eyePos = rotatedLad.xyz - uCameraPosition;
+
+vec4 N = uMMatrix*vec4(aVertexNormal, 1.0);
+
+R = reflect(eyePos.xyz, N.xyz);
+
+gl_Position = uVMatrix*uMMatrix*vec4(aVertexPosition, 1.0);
+}
+</script>
+<!-- fragment shader -->
+<script id="envmap-fragment-shader" type="x-shader/x-fragment">
+precision mediump float;
+
+varying vec3 R;
+
+uniform samplerCube uTexture;
+
+void main() {
+  vec4 texColor = textureCube(uTexture, R);
+  
+  gl_FragColor = texColor;
+  // gl_FragColor = vec4(1, 1, 1, 1);
+}
+</script>
+<script id="envmap-vertex-shader-refract" type="x-shader/x-vertex">
+// Per vertex information
+attribute vec3 aVertexNormal;
+attribute vec3 aVertexPosition;
+  
+uniform mat4 uMMatrix;
+uniform mat4 uPMatrix;
+uniform mat3 uNMatrix;
+uniform mat4 uVMatrix;
+
+uniform vec3 uCameraPosition;
+
+varying vec3 T;
+varying vec3 vPosition;
+varying vec3 vNormal;
+
+void main(void) {
+
+// Get the vertex position in eye coordinates
+// vec4 vertexPositionEye4 = uMMatrix * vec4(aVertexPosition, 1.0);
+// vPosition = vertexPositionEye4.xyz / vertexPositionEye4.w;
+// vNormal = normalize(uNMatrix * aVertexNormal);
+// vec4 eyePos  = uMMatrix*vec4(vPosition, 1.0);
+// vec4 NN = uMMatrix*vec4(aVertexNormal, 1.0);
+// vec3 N = normalize(NN.xyz);
+vec3 eyePos = uCameraPosition - aVertexPosition;
+vec3 N = normalize(uNMatrix * aVertexNormal);
+
+T = refract(eyePos.xyz, N, 1.00/1.52);
+// T = refract(eyePos.xyz, N, 0.1);
+            
+gl_Position = uMMatrix*vec4(aVertexPosition, 1.0);
+}
+</script>
+<!-- fragment shader -->
+<script id="envmap-fragment-shader-refract" type="x-shader/x-fragment">
+precision mediump float;
+
+varying vec3 T;
+
+uniform samplerCube uTexture;
+
+void main() {
+  vec4 refractColor = textureCube(uTexture, T);
+  refractColor = mix(refractColor, vec4(1.0, 1.0, 1.0, 0.2), 0.3);
+  // refractColor.w = 0.7;
+
+  gl_FragColor = refractColor;
+  // gl_FragColor = vec4(1, 1, 1, 1);
+}
+</script>
+<script id="shader-vs" type="x-shader/x-vertex">
+  attribute vec3 aVertexNormal;
+  attribute vec3 aVertexPosition;
+ 
+  uniform mat4 uMMatrix;
+  uniform mat4 uPMatrix;
+  uniform mat3 uNMatrix;
+  uniform mat4 uVMatrix;
+  
+  uniform vec3 uLightPosition;
+  uniform vec3 uAmbientLightColor;
+  uniform vec3 uDiffuseLightColor;
+  uniform vec3 uSpecularLightColor;
+  
+  uniform vec3 uKAmbient;
+  uniform vec3 uKDiffuse;
+  uniform vec3 uKSpecular;
+  uniform float uShininess;
+  
+  varying vec3 vLightPosition;
+  varying vec3 vAmbientLightColor;
+  varying vec3 vDiffuseLightColor;
+  varying vec3 vSpecularLightColor;
+  varying vec3 vKAmbient;
+  varying vec3 vKDiffuse;
+  varying vec3 vKSpecular;
+  varying float vShininess;
+  varying vec3 vPosition;
+  varying vec3 vNormal;
+
+  void main(void) {
+  
+    vLightPosition = uLightPosition;
+    vAmbientLightColor = uAmbientLightColor;
+    vDiffuseLightColor = uDiffuseLightColor;
+    vSpecularLightColor = uSpecularLightColor;
+    vKAmbient = uKAmbient;
+    vKDiffuse = uKDiffuse;
+    vKSpecular = uKSpecular;
+    vShininess = uShininess;
+
+  // Get the vertex position in eye coordinates
+  vec4 vertexPositionEye4 = uMMatrix * vec4(aVertexPosition, 1.0);
+  vPosition = vertexPositionEye4.xyz / vertexPositionEye4.w;
+  // vNormal = normalize(uNMatrix * aVertexNormal);
+  vNormal = (uMMatrix*vec4(aVertexNormal, 1.0)).xyz;
+
+  gl_Position = uVMatrix*uMMatrix*vec4(aVertexPosition, 1.0);
+  }
+</script>
+<script id="shader-fs" type="x-shader/x-fragment">
+precision mediump float;
+
+varying vec3 vLightPosition;
+varying vec3 vAmbientLightColor;
+varying vec3 vDiffuseLightColor;
+varying vec3 vSpecularLightColor;
+varying vec3 vKAmbient;
+varying vec3 vKDiffuse;
+varying vec3 vKSpecular;
+varying float vShininess;
+varying vec3 vPosition;
+varying vec3 vNormal;
+
+void main(void) {
+    vec3 vectorToLightSource = normalize(vLightPosition - vPosition);
+    
+    vec3 normalEye = vNormal;
+    
+    float diffuseLightWeightning = max(dot(normalEye, 
+                                    vectorToLightSource), 0.0);
+                                       
+    vec3 reflectionVector = normalize(reflect(-vectorToLightSource, 
+                                             normalEye));
+    
+    vec3 viewVectorEye = -normalize(vPosition);
+    
+    // PHONG SHADING
+    //float rdotv = max(dot(reflectionVector, viewVectorEye), 0.0);
+    //float specularLightWeightning = pow(rdotv, vShininess);
+    
+    // BLINN-PHONG
+    vec3 halfwayVector = normalize(vectorToLightSource + viewVectorEye);
+    float ndoth = max(dot(normalEye, halfwayVector), 0.0);
+    float specularLightWeightning = pow(ndoth, vShininess);
+    
+    gl_FragColor = vec4(((vAmbientLightColor*vKAmbient)
+              + (vDiffuseLightColor*vKDiffuse) * diffuseLightWeightning
+              + (vSpecularLightColor*vKSpecular) * specularLightWeightning),1.0);
+}
+</script>
+
+
+
+<!-- *** Skybox Shader Section *** -->
+<script id="skybox-vertex-shader" type="x-shader/x-vertex">
+attribute vec4 a_position;
+varying vec4 v_position; // We need to use the position in the fragment shader as well
+void main() {
+  v_position = a_position;
+  gl_Position = a_position;
+  gl_Position.z = 0.7;
+}
+</script>
+<script id="skybox-fragment-shader" type="x-shader/x-fragment">
+precision mediump float;
+
+uniform samplerCube u_skybox;
+uniform mat4 u_viewDirectionProjectionInverse;
+
+varying vec4 v_position;
+void main() {
+  vec4 t = u_viewDirectionProjectionInverse * v_position;
+  gl_FragColor = textureCube(u_skybox, normalize(t.xyz / t.w));
+}
+</script>
+
+
+<script src="webgl-utils.js"></script>
+<script src="m4.js"></script>
+<script src="primitives.js"></script>
+<script src="gl-matrix-min.js"></script>
+<script src="TriMesh.js"></script>  
+<script src="mp3.js"></script>
+
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+<title>MP3</title>
+<link type="text/css" href="webgl-tutorials.css" rel="stylesheet" />
+</head>
+<body onload=startup();>
+<div class="description">
+(Make sure to run a local server before running the MP)<br>
+CS 418: MP3 - Environment Mapping<br>
+</div>
+<canvas id="canvas"></canvas>
+
+<form id="input_form">
+    <fieldset>
+        <legend>Rendering Parameters</legend>
+     <input type="radio" name="primitive" id="blinn-phong" value="blinn-phong" checked> Blinn-Phong
+     <input type="radio" name="primitive" id="reflection" value="reflection"> Reflection
+     <input type="radio" name="primitive" id="refraction" value="refraction" > Refraction  
+    </fieldset>
+    <fieldset>
+        <legend>Controls</legend>
+     <emph>Euler Y:</emph> Keys A and D <br><br>
+     <emph>Camera Y:</emph> Keys ArrowLeft and ArrowRight   
+    </fieldset>
+    Included code libraries such as m4.js are taken either from the prebuilt versions of TWGL at webglfundamentals.org or from Lab 6 code.<br>
+    CSS styling (border and background) used from webglfundamentals.org<br>
+    (Reflection/Refraction are buggy but worth partial credit)<br/>
+</form>
+
+</body>
+
+</html>
