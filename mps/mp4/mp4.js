@@ -29,6 +29,7 @@ var mvMatrix = mat4.create();
 //Create Projection matrix
 var pMatrix = mat4.create();
 
+// stack used for mvMatrix (maintains proper order)
 var mvMatrixStack = [];
 
 // List of currently pressed keys
@@ -449,6 +450,7 @@ function tick() {
     updateSphereStuff(); // this should loop through all the spheres in a list and call updateEulerIntegration on each
 }
 
+// handles adding/clearing spheres
 function handleKeyUp(event) {
   if (event.key == "=") {
     for (var i = 0; i < document.getElementById("num-spheres").value; i++) {

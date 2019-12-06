@@ -84,7 +84,7 @@ class Sphere {
 }
 
 // box bounds: 
-// z - from -3 to +3
+// z - from 0.5 to 3
 // y - from -3 to 3
 // x - from -3 to 3
 
