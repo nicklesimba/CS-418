@@ -348,8 +348,9 @@ function drawOneSphere(sphere) {
     vec3.set(transformVec,20,20,20);
     mat4.scale(mvMatrix, mvMatrix,transformVec);
 
-    mat4.scale(mvMatrix, mvMatrix, [sphere.radius, sphere.radius, sphere.radius]);
     mat4.translate(mvMatrix, mvMatrix, sphere.position);
+    mat4.scale(mvMatrix, mvMatrix, [sphere.radius, sphere.radius, sphere.radius]);
+    
  
     //Get material color
     colorVal = sphere.color;

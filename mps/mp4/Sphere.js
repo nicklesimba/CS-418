@@ -1,7 +1,7 @@
 
 class Sphere {
     constructor() { 
-        this.position = vec3.fromValues(Math.random()*(4)-2, Math.random()*(0.5)+1.6, Math.random()*(0.5)+0.8);
+        this.position = vec3.fromValues(Math.random()*(4)-2, Math.random()*(0.5)+1.6, Math.random()+0.8);
         this.velocity = vec3.fromValues(Math.random()*(0.02)-0.01, -Math.random()*(0.002), Math.random()*(0.02)-0.01);
         this.tempPosition = vec3.create();
         this.tempVelocity = vec3.create();
@@ -69,8 +69,8 @@ class Sphere {
         }
         // KEEP IN MIND Z AXIS LOOKS AT INCREASINGLY NEGATIVE Z VALUES
         // frontmost wall check (away from user)
-        if (this.tempPosition[2]-this.radius < 0.5) {
-            this.tempPosition[2] = 0.5+this.radius+0.001;
+        if (this.tempPosition[2]-this.radius < 0) {
+            this.tempPosition[2] = 0+this.radius+0.001;
             this.velocity[2] *= -1;
             console.log("sphereTempPos front: " + (this.tempPosition[2]-this.radius));
         }
